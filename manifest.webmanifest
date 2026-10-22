@@ -1,14 +1,14 @@
 {
   "name": "牌理ドリル",
   "short_name": "牌理ドリル",
-  "description": "麻雀の点数計算・待ち・読み・何切るの練習ドリル",
+  "description": "雀卓の中央に置く点数管理と、点数計算・待ち・読み・何切るの練習ドリル",
   "lang": "ja",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#EEF1EC",
-  "theme_color": "#1E6A4A",
+  "background_color": "#06231a",
+  "theme_color": "#0b3a2c",
   "prefer_related_applications": false,
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
