@@ -10,8 +10,6 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>牌理ドリル</title>
-</head>
-<body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Zen+Old+Mincho:wght@700;900&family=Shippori+Mincho+B1:wght@700;800&display=swap">
@@ -1610,8 +1608,8 @@ function sbTable(pats,d,hl){
 function sbTip(p,d){
   const row=pp=>SB_HANS[pp].map(h=>sbVal(pp,h,d)).join(' → ');
   if(p[0]==='m')return '5翻 満貫・6〜7翻 跳満・8〜10翻 倍満・11〜12翻 三倍満・13翻〜 役満。'+(d?'親は子の1.5倍':'子のロンは 8000・12000・16000・24000・32000');
-  const t={tsumo:'ツモは翻数だけ見て「30符の表」',menron:'門前ロンは「40符の表」。4翻で満貫が確定',nakiron:'鳴いてロンは「30符の表」',
-    pinT:'平和ツモは「20符の表」（平和＋ツモで2翻から）',pinR:'平和ロンは「30符の表」（鳴いてロンと同じ）',
+  const t={tsumo:'ツモは翻数だけ見て「30符の表」。語感は「ゴミ（300・500）・ゴトウ・センニセン」',menron:'門前ロンは「40符の表」。「イチサン・ニロク・ゴミニー」の倍々。4翻で満貫が確定',nakiron:'鳴いてロンは「30符の表」。「セン・ニセン・ザンク」',
+    pinT:'平和ツモは「20符の表」（平和＋ツモで2翻から）。「ヨンナナ・ナナトザン・イチサンニロク」。4翻でも満貫にならない',pinR:'平和ロンは「30符の表」（鳴いてロンと同じ）',
     chiR:'七対子は「25符の表」（2翻から）。4翻でも満貫にならない',chiT:'七対子ツモは「25符の表」（3翻から）'}[p];
   return `${t}：${row(p)}`;
 }
@@ -1647,7 +1645,8 @@ function sbCheckCard(){
 }
 
 // ---- 段階5・6：手牌から ----
-const sbFuX=r=>r.fuLines.filter(f=>!/^副底|^門前ロン|^ツモ$|^副露の平和形/.test(f[0]));
+// 渋川式に合わせ、ツモの2符も手牌の符に数える（これで基準が12符・22符にそろう）
+const sbFuX=r=>r.fuLines.filter(f=>!/^副底|^門前ロン|^副露の平和形/.test(f[0]));
 function sbPatOf(ctx,r){if(r.chiitoi)return ctx.tsumo?'chiT':'chiR';if(r.pinfu)return ctx.tsumo?'pinT':'pinR';return ctx.tsumo?'tsumo':(r.menzen?'menron':'nakiron');}
 const sbGroup=p=>/^pin/.test(p)?'pin':/^chi/.test(p)?'chi':p;
 const sbMaxStepHan=()=>rules.kiriage?3:4;
@@ -1685,14 +1684,15 @@ function sbSplit(r,win){
   const pw=!r.groups.some(g=>g.win);
   return r.groups.map(g=>grp(groupTiles(g),nm(g)+(g.win?'・和了':''),g.win)).join('')+grp([r.pair,r.pair],'雀頭'+(pw?'・和了':''),pw);
 }
-function sbStepRule(ts){return ts?'ツモは手牌の符が<b>10符で1段階・20符で2段階</b>（渋川式の「12符・22符」の例外）':'手牌の符が<b>12符で1段階・22符で2段階</b>上がる';}
+function sbStepRule(ts){return `手牌の符${ts?'（ツモの2符も込み）':''}が<b>12符で1段階・22符で2段階</b>上がる`;}
 function sbStepsExplain(Q2){
   const {ctx,r,p}=Q2,B=SB_PAT[p].fu,xs=sbFuX(r),x=xs.reduce((a,f)=>a+f[1],0),st=Math.max(0,(r.fu-B)/10);
   const rows=xs.length?xs.map(f=>`<tr><td>${f[0]}</td><td class="num">${f[1]}符</td></tr>`).join('')+`<tr class="total"><td>手牌の符</td><td class="num">${x}符</td></tr>`
     :'<tr><td>符のつく刻子・待ち・雀頭なし</td><td class="num">0符</td></tr>';
-  return `<div><h3>手牌の符（刻子・槓子・待ち・雀頭）</h3><table>${rows}</table></div>
+  return `<div><h3>手牌の符（刻子・槓子・待ち・雀頭・ツモ）</h3><table>${rows}</table></div>
     <div><h3>段階の決め方</h3><p>${SB_PAT[p].n}は「${B}符の表」が基準。${sbStepRule(ctx.tsumo)}。</p>
     <p>この手は ${x}符 → <b>${st}段階</b>上げて <b>${r.fu}符</b>で計算します。</p>
+    <p class="sub">まず見るところ：カンがあるか、1・9・字牌の暗刻があるか。どちらもなければ、ほとんど段階は上がりません。</p>
     ${st?`<p class="sub">覚え方：50符は「25符（七対子）の表を1翻上」、60符は「30符の表を1翻上」で読めます。</p>`:''}</div>`;
 }
 function sbNewSteps(){
@@ -1706,7 +1706,7 @@ function sbDrawSteps(){
     <div class="qhead"><p class="prompt">符で何段階上がる？</p>${stHTML()}</div>
     <div class="felt"><div class="chips"><span class="chip em">${SB_PAT[p].n}（${SB_PAT[p].fu}符の表）</span><span class="chip">${KAZE[ctx.bakaze-27]}場</span><span class="chip">${KAZE[ctx.jikaze-27]}家</span></div>${handScoreHTML(ctx)}</div>
 <!--CTRL-->
-    <p class="hint">刻子・槓子・待ち・雀頭の符を足します。12符で1段階、22符で2段階（ツモは10符・20符）</p>
+    <p class="hint">刻子・槓子・待ち・雀頭・ツモの符を足します。12符で1段階、22符で2段階</p>
     <div class="pad c4">${[0,1,2,3].map(n=>{let k='';if(d){if(n===Q.ans)k='ok';else if(n===Q.sel)k='ng';}
       return `<button class="key ${k}" type="button" data-v="${n}" aria-pressed="${Q.sel===n}" ${d?'disabled':''}>${n===3?'3〜':n}<small>段階</small></button>`;}).join('')}</div>`);
   bindCourse();
@@ -1742,7 +1742,7 @@ function sbDrawTotal(){
   else if(Q.step==='h')pad=`<div class="pad c4">${range(1,14).map(n=>key(n,n+'<small>翻</small>',Q.h,r.han)).join('')}</div>`;
   else if(Q.step==='s')pad=`<div class="pad c4">${[0,1,2,3].map(n=>key(n,(n===3?'3〜':n)+'<small>段階</small>',Q.s,Q.steps)).join('')}</div><div class="pad c2" style="margin-top:6px">${key('x',`不要<small>平和・七対子・${sbMaxStepHan()+1}翻以上</small>`,Q.s,Q.steps)}</div>`;
   else pad=`<div class="pad c2">${Q.opts.map(o=>key(o,o,Q.pt,Q.ans)).join('')}</div>`;
-  const hint={a:'表を選ぶ：ツモ／門前ロン／鳴いてロン／平和／七対子',h:'役とドラを合計した翻数',s:'手牌の符で何段階上がるか（12符で1・22符で2、ツモは10符・20符）',pt:ctx.tsumo?(ctx.dealer?'親のツモは「◯オール」':'子のツモは「子の払い・親の払い」'):(ctx.dealer?'親のロン':'子のロン')}[Q.step];
+  const hint={a:'表を選ぶ：ツモ／門前ロン／鳴いてロン／平和／七対子',h:'役とドラを合計した翻数',s:'手牌の符（ツモの2符も込み）で何段階上がるか。12符で1・22符で2',pt:ctx.tsumo?(ctx.dealer?'親のツモは「◯オール」':'子のツモは「子の払い・親の払い」'):(ctx.dealer?'親のロン':'子のロン')}[Q.step];
   render(`${courseSeg()}
     <div class="qhead"><p class="prompt">渋川式で何点？</p>${stHTML()}</div>
     <div class="felt">
@@ -1794,7 +1794,9 @@ function shibuGuide(){
     <li>覚える順番：満貫以上 → 基本の3つの表 → 平和・七対子 → 親 → 最後に符</li>
     <li>基本の3つ：<b>ツモ＝30符の表</b>、<b>門前ロン＝40符の表</b>、<b>鳴いてロン＝30符の表</b></li>
     <li>親のロンは子の約1.5倍。親のツモは「子のツモで親が払う額」のオール</li>
-    <li>符：手牌の符（刻子・槓子・待ち・雀頭）が<b>12符で1段階、22符で2段階</b>上がる。<b>ツモだけは10符・20符</b>。符で点数が変わるのは<b>3翻まで</b>（切り上げ満貫なしなら4翻まで）</li>
+    <li>4翻は満貫。例外は<b>平和ツモ4翻（1300・2600）</b>と<b>七対子4翻（6400）</b>の2つだけ${rules.kiriage?'':'（切り上げ満貫なしの設定では30符4翻も満貫になりません）'}</li>
+    <li>符：手牌の符（刻子・槓子・待ち・雀頭・ツモ）が<b>12符で1段階、22符で2段階</b>上がる。符で点数が変わるのは<b>3翻まで</b>（切り上げ満貫なしなら4翻まで）</li>
+    <li>符を気にするのは、まず<b>カンがある</b>か<b>1・9・字牌の暗刻がある</b>とき。順子やタンヤオのポンばかりの手は、ほとんど段階が上がらない</li>
     <li>50符は「25符の表を1翻上」、60符は「30符の表を1翻上」で読める</li></ul></div>
     <p class="sub" style="font-weight:700">満貫以上</p>${T(['mR','mT'],false)}${T(['mR','mT'],true)}
     <p class="sub" style="font-weight:700">基本の3つの表</p>${T(['tsumo','menron','nakiron'],false)}${T(['tsumo','menron','nakiron'],true)}
@@ -2880,7 +2882,6 @@ layout(); render();
 try{ if (localStorage.getItem(VKEY) === 'drill') showDrill(true); }catch(e){}
 })();
 </script>
-
 <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});}</script>
 </body>
 </html>
