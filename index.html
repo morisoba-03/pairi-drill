@@ -1576,7 +1576,7 @@ function sbCardOpts(c){
     [i-1,i+1,i-2,i+2].forEach(j=>{if(L[j])near.push(sbVal(c.p,L[j],c.d));});
   }else[-1,1].forEach(dh=>{if(SB_HANS[c.p].includes(c.h+dh))near.push(sbVal(c.p,c.h+dh,c.d));});
   near.push(sbVal(c.p,c.h,!c.d));
-  const pool=sbCards(shibu.stage).map(x=>sbVal(x.p,x.h,x.d));
+  const pool=[1,2,3,4].flatMap(sbCards).filter(x=>x.d===c.d).map(x=>sbVal(x.p,x.h,x.d));
   return{ans,opts:sbChoices(ans,near,pool)};
 }
 function sbProgress(ok){
@@ -1650,16 +1650,31 @@ function sbCheckCard(){
 const sbFuX=r=>r.fuLines.filter(f=>!/^副底|^門前ロン|^ツモ$|^副露の平和形/.test(f[0]));
 function sbPatOf(ctx,r){if(r.chiitoi)return ctx.tsumo?'chiT':'chiR';if(r.pinfu)return ctx.tsumo?'pinT':'pinR';return ctx.tsumo?'tsumo':(r.menzen?'menron':'nakiron');}
 const sbGroup=p=>/^pin/.test(p)?'pin':/^chi/.test(p)?'chi':p;
+const sbMaxStepHan=()=>rules.kiriage?3:4;
+function sbGenChiitoi(){
+  for(let k=0;k<300;k++){
+    const ts=shuffle(range(0,34)).slice(0,7),conc=zeros();ts.forEach(t=>conc[t]=2);
+    const jikaze=27+ri(4);
+    const ctx={conc,melds:[],win:pick(ts),tsumo:Math.random()<0.45,riichi:Math.random()<0.6,bakaze:Math.random()<0.7?27:28,jikaze,dora:pick([0,0,2,2,4,1]),dealer:jikaze===27,rules};
+    const r=scoreHand(ctx);if(!r||r.yakuman||!r.chiitoi||r.han>7)continue;
+    return{ctx,r,p:sbPatOf(ctx,r)};
+  }
+  return null;
+}
 function sbGenHand(st){
+  // 総合は七対子・平和もアガリ方の選択肢として練習できるよう、一定の割合で出す
+  const kind=st===6?Math.random():1;
+  if(kind<0.15){const c=sbGenChiitoi();if(c)return c;}
+  const wantPin=kind<0.32;
   const want=st===5?pick([0,1,1,2]):null;
   for(let k=0;k<400;k++){
-    const q=genScoreQ(rules,st===5?pick([2,3,3]):pick([1,2,2,3]));if(!q)continue;
+    const q=genScoreQ(rules,st===5?pick([2,3,3]):wantPin?pick([1,2]):pick([1,2,2,3]));if(!q)continue;
     const p=sbPatOf(q.ctx,q.r);
     if(st===5){
-      if(q.r.chiitoi||q.r.pinfu||q.r.han>4)continue;
+      if(q.r.chiitoi||q.r.pinfu||q.r.han>sbMaxStepHan())continue;
       const s=Math.max(0,(q.r.fu-SB_PAT[p].fu)/10);
       if(want===2?s<2:s!==want)continue;
-    }else if(q.r.han>7)continue;
+    }else if(q.r.han>7||(wantPin&&k<300&&!q.r.pinfu))continue;
     return{...q,p};
   }
   return null;
@@ -1704,7 +1719,7 @@ function sbDrawSteps(){
 const SB_AG=[['tsumo','ツモ'],['menron','門前ロン'],['nakiron','鳴いてロン'],['pin','平和'],['chi','七対子']];
 function sbNewTotal(){
   const q=sbGenHand(6);if(!q){return sbNewCard();}
-  const {ctx,r,p}=q,g=sbGroup(p),need=!['pin','chi'].includes(g)&&r.han<5;
+  const {ctx,r,p}=q,g=sbGroup(p),need=!['pin','chi'].includes(g)&&r.han<=sbMaxStepHan();
   const steps=need?Math.min(3,Math.max(0,(r.fu-SB_PAT[p].fu)/10)):'x';
   const ans=r.pay.text,near=[];
   [20,25,30,40,50,60].forEach(f=>{if(f!==r.fu)near.push(payText(r.han,f,ctx.dealer,ctx.tsumo,rules).text);});
@@ -1725,7 +1740,7 @@ function sbDrawTotal(){
   let pad;
   if(Q.step==='a')pad=`<div class="pad c3">${SB_AG.map(([v,l])=>key(v,l,Q.a,Q.g)).join('')}</div>`;
   else if(Q.step==='h')pad=`<div class="pad c4">${range(1,14).map(n=>key(n,n+'<small>翻</small>',Q.h,r.han)).join('')}</div>`;
-  else if(Q.step==='s')pad=`<div class="pad c4">${[0,1,2,3].map(n=>key(n,(n===3?'3〜':n)+'<small>段階</small>',Q.s,Q.steps)).join('')}</div><div class="pad c2" style="margin-top:6px">${key('x','不要<small>平和・七対子・5翻以上</small>',Q.s,Q.steps)}</div>`;
+  else if(Q.step==='s')pad=`<div class="pad c4">${[0,1,2,3].map(n=>key(n,(n===3?'3〜':n)+'<small>段階</small>',Q.s,Q.steps)).join('')}</div><div class="pad c2" style="margin-top:6px">${key('x',`不要<small>平和・七対子・${sbMaxStepHan()+1}翻以上</small>`,Q.s,Q.steps)}</div>`;
   else pad=`<div class="pad c2">${Q.opts.map(o=>key(o,o,Q.pt,Q.ans)).join('')}</div>`;
   const hint={a:'表を選ぶ：ツモ／門前ロン／鳴いてロン／平和／七対子',h:'役とドラを合計した翻数',s:'手牌の符で何段階上がるか（12符で1・22符で2、ツモは10符・20符）',pt:ctx.tsumo?(ctx.dealer?'親のツモは「◯オール」':'子のツモは「子の払い・親の払い」'):(ctx.dealer?'親のロン':'子のロン')}[Q.step];
   render(`${courseSeg()}
@@ -1758,7 +1773,7 @@ function sbCheckTotal(){
   const mk=o=>`<span class="okx ${o?'o':'x'}">${o?'○':'×'}</span>`;
   const yaku=r.yaku.map(y=>`${y.name} ${y.han}`).join('・')+(ctx.dora?`・ドラ${ctx.dora}`:'');
   let s3;
-  if(Q.steps==='x')s3=r.han>=5?`${r.han}翻なので符は関係なし（段階は不要）`:`${SB_PAT[p].n}は符が固定（段階は不要）`;
+  if(Q.steps==='x')s3=['pin','chi'].includes(g)?`${SB_PAT[p].n}は符が固定（段階は不要）`:r.han>=5?`${r.han}翻なので符は関係なし（段階は不要）`:`4翻は${p==='menron'?'門前ロンで満貫確定':'切り上げ満貫'}なので段階は不要`;
   else{const x=sbFuX(r).reduce((a,f)=>a+f[1],0);s3=`手牌の符 ${x}符 → ${Q.steps}段階 → ${r.fu}符の表（${sbStepRule(ctx.tsumo).replace(/<\/?b>/g,'')}）`;}
   const fam=sbFam(p),tbl=r.han<=4&&(Q.steps===0||Q.steps==='x')?sbTable(fam,ctx.dealer,{p,h:r.han}):r.han<=4?`<p class="sub">${r.fu}符の表（${ctx.dealer?'親':'子'}・${ctx.tsumo?'ツモ':'ロン'}）</p>${quickRow(r.fu,ctx.dealer,ctx.tsumo,r.han)}`:sbTable(['mR','mT'],ctx.dealer,{p:ctx.tsumo?'mT':'mR',h:r.han});
   openEx(Q.ok,`${SB_PAT[p].n}・${r.han}翻${Q.steps>0?`・${Q.steps}段階`:''} → <b>${r.pay.text}</b>${r.pay.limit?'（'+r.pay.limit+'）':''}${msg}`,
@@ -1779,7 +1794,7 @@ function shibuGuide(){
     <li>覚える順番：満貫以上 → 基本の3つの表 → 平和・七対子 → 親 → 最後に符</li>
     <li>基本の3つ：<b>ツモ＝30符の表</b>、<b>門前ロン＝40符の表</b>、<b>鳴いてロン＝30符の表</b></li>
     <li>親のロンは子の約1.5倍。親のツモは「子のツモで親が払う額」のオール</li>
-    <li>符：手牌の符（刻子・槓子・待ち・雀頭）が<b>12符で1段階、22符で2段階</b>上がる。<b>ツモだけは10符・20符</b></li>
+    <li>符：手牌の符（刻子・槓子・待ち・雀頭）が<b>12符で1段階、22符で2段階</b>上がる。<b>ツモだけは10符・20符</b>。符で点数が変わるのは<b>3翻まで</b>（切り上げ満貫なしなら4翻まで）</li>
     <li>50符は「25符の表を1翻上」、60符は「30符の表を1翻上」で読める</li></ul></div>
     <p class="sub" style="font-weight:700">満貫以上</p>${T(['mR','mT'],false)}${T(['mR','mT'],true)}
     <p class="sub" style="font-weight:700">基本の3つの表</p>${T(['tsumo','menron','nakiron'],false)}${T(['tsumo','menron','nakiron'],true)}
