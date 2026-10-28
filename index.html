@@ -519,6 +519,31 @@ button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
 .lvinfo{display:grid;gap:6px;font-size:13px}
 .lvinfo div{display:flex;gap:8px}
 .lvinfo b{flex:none;width:3em}
+.pad.c3{grid-template-columns:repeat(3,1fr)}
+/* 渋川式 */
+.crs{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.crs .seg button{min-height:30px;padding:4px 12px}
+.sbname{font-size:12px;font-weight:700;color:var(--muted)}
+.stg{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.stg button{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:3px 0;font-weight:800;font-size:15px;line-height:1.15;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:42px}
+.stg button small{font-size:9.5px;font-weight:700;color:var(--muted);white-space:nowrap}
+.stg button[aria-pressed="true"]{background:var(--sel);color:var(--sel-ink);border-color:var(--sel)}
+.stg button[aria-pressed="true"] small{color:inherit}
+.bigq{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:16px 6px 10px;color:var(--felt-ink)}
+.bq-who{font-family:var(--f-disp);font-size:22px;font-weight:800;padding:2px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.35)}
+.bq-who.em{background:var(--face);color:#18221D;border-color:var(--face)}
+.bq-pat{font-size:24px;font-weight:700}
+.bq-han{font-family:var(--f-disp);font-size:42px;font-weight:800;line-height:1}
+.bq-han small{font-size:18px;margin-left:2px}
+.sbt{table-layout:fixed}
+.sbt td,.sbt th{font-size:12.5px!important;padding:5px 2px!important;white-space:normal!important;word-break:keep-all;line-height:1.3}
+.sbt td:first-child,.sbt th:first-child{width:24%}
+.sbt td.hi{background:var(--sel);color:var(--sel-ink);font-weight:800}
+.sbt td.mine{box-shadow:inset 0 0 0 2px var(--bad)}
+.sbt small.sbf{display:block;font-size:10px;color:var(--muted);font-weight:700}
+.sbt td.hi small.sbf{color:inherit}
+.proc{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:8px;font-size:14px}
+.okx{font-weight:800;margin-left:4px} .okx.o{color:var(--good)} .okx.x{color:var(--bad)}
 @media (max-width:360px){.brand{font-size:17px}.lv button{padding:6px 9px}}
 @media (prefers-reduced-motion:reduce){.ex{animation:none}.pick,.pick .tile{transition:none}}
 .back{flex:none;align-self:center;border:1px solid var(--line);background:var(--surface);border-radius:999px;font-size:13px;font-weight:700;padding:0 12px;min-height:36px;white-space:nowrap}
@@ -1305,7 +1330,7 @@ const $=s=>root.querySelector(s);
 const view=$('#view'),ctrl=$('#ctrl'),go=$('#go'),ex=$('#ex'),exT=$('#exT');
 function render(h){const i=h.indexOf('<!--CTRL-->');view.innerHTML=h.slice(0,i);ctrl.innerHTML=h.slice(i+11);}
 const LVN=['','初級','中級','上級'];
-function cur(){const k=mode+(mode==='read'?(typeof readKind!=='undefined'?readKind:'hit'):'')+levels[mode];return stats[k]||(stats[k]={ok:0,n:0,st:0});}
+function cur(){const k=(mode==='score'&&course==='shibu')?'shibu'+shibu.stage:mode+(mode==='read'?(typeof readKind!=='undefined'?readKind:'hit'):'')+levels[mode];return stats[k]||(stats[k]={ok:0,n:0,st:0});}
 function stHTML(){const s=cur();return `<span class="st" id="st"><b>${s.ok}</b>/${s.n}問 · 連続<b>${s.st}</b></span>`;}
 function record(ok){const s=cur();s.n++;if(ok){s.ok++;s.st++;}else s.st=0;LS.set('stats2',stats);const e=$('#st');if(e)e.outerHTML=stHTML();}
 
@@ -1318,7 +1343,8 @@ function setMode(m){
 function drawLv(){root.querySelectorAll('#lv button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.lv===levels[mode]));}
 function next(){
   ex.hidden=true;exT.hidden=true;
-  if(mode==='score')newScore();else if(mode==='wait')newWait();else if(mode==='read')newRead();else newKiru();
+  root.querySelector('#lv').hidden=mode==='score'&&course==='shibu';
+  if(mode==='score')(course==='shibu'?newShibu():newScore());else if(mode==='wait')newWait();else if(mode==='read')newRead();else newKiru();
   view.scrollTop=0;
 }
 function setGo(label,enabled,fn){go.textContent=label;go.disabled=!enabled;go.onclick=fn;$('#skip').hidden=!!(Q&&Q.done);}
@@ -1417,6 +1443,7 @@ function drawScore(){
   }
   const payHint=ctx.tsumo?(ctx.dealer?'親のツモは「◯オール」':'子のツモは「子の支払い・親の支払い」'):(ctx.dealer?'親のロン':'子のロン');
   render(`
+    ${courseSeg()}
     <div class="qhead"><p class="prompt">この和了は何点？</p>${stHTML()}</div>
     <div class="felt">
       <div class="chips"><span class="chip">${KAZE[ctx.bakaze-27]}場</span><span class="chip ${ctx.dealer?'em':''}">${KAZE[ctx.jikaze-27]}家・${ctx.dealer?'親':'子'}</span>${ctx.riichi?'<span class="chip">立直</span>':''}<span class="chip">ドラ${ctx.dora}${ctx.riichi&&ctx.dora?'（裏込み）':''}</span></div>
@@ -1426,6 +1453,7 @@ function drawScore(){
     <div class="steps" style="grid-template-columns:repeat(3,1fr)">${stepH}</div>
     <p class="hint">${Q.step==='h'?'役とドラを合計した翻数':Q.step==='f'?'符を計算して10符単位に切り上げた値':payHint}${lv===1?' ／ 初級は符を表示しています':''}</p>
     ${pad}`);
+  bindCourse();
   root.querySelectorAll('.step:not([disabled])').forEach(b=>b.onclick=()=>{Q.step=b.dataset.step;drawScore();});
   if(!d){
     root.querySelectorAll('.key').forEach(b=>b.onclick=()=>{
@@ -1495,6 +1523,268 @@ function scoreBody(){
    <div><h3>符の内訳${r.han>=5?'（5翻以上は点数に影響なし）':''}</h3><table>${fuRows}</table></div>
    <div><h3>点数の出し方</h3><div class="formula">${f.map(x=>`<span>${x}</span>`).join('')}<b>${p.text}</b></div></div>
    ${memoHTML(ctx,r)}`;
+}
+
+// ===== 渋川式 =====
+// 符を後回しにして、アガリ方ごとの「表」を覚える方式。段階1〜4は表の暗記カード、5は符の段階、6は実戦形の総合問題
+let course=LS.get('course','normal');if(!['normal','shibu'].includes(course))course='normal';
+let shibu=Object.assign({stage:1,w:{},rec:{},cl:{}},LS.get('shibu',{}));
+if(!(shibu.stage>=1&&shibu.stage<=6))shibu.stage=1;
+const saveSb=()=>LS.set('shibu',shibu);
+const SB_PAT={
+  tsumo:{n:'ツモ',fu:30,ts:1,tbl:'30符'},menron:{n:'門前ロン',fu:40,ts:0,tbl:'40符'},nakiron:{n:'鳴いてロン',fu:30,ts:0,tbl:'30符'},
+  pinT:{n:'平和ツモ',fu:20,ts:1,tbl:'20符'},pinR:{n:'平和ロン',fu:30,ts:0,tbl:'30符'},chiR:{n:'七対子ロン',fu:25,ts:0,tbl:'25符'},chiT:{n:'七対子ツモ',fu:25,ts:1,tbl:'25符'},
+  mR:{n:'ロン',fu:30,ts:0},mT:{n:'ツモ',fu:30,ts:1}};
+const SB_HANS={tsumo:[1,2,3,4],menron:[1,2,3,4],nakiron:[1,2,3,4],pinT:[2,3,4],pinR:[1,2,3,4],chiR:[2,3,4],chiT:[3,4],
+  mR:[5,6,7,8,9,10,11,12,13],mT:[5,6,8,11,13]};
+const SB_STAGES=[null,{n:'満貫以上',s:'満貫↑'},{n:'基本の3つの表',s:'3つの表'},{n:'平和・七対子',s:'平和七対'},{n:'親の点数',s:'親'},{n:'符で段階アップ',s:'符の段階'},{n:'総合（実戦形）',s:'総合'}];
+const SB_LIM={5:'満貫',6:'跳満',8:'倍満',11:'三倍満',13:'役満'};
+const sbVal=(p,h,d)=>payText(h,SB_PAT[p].fu,d,!!SB_PAT[p].ts,rules).text;
+const sbFmt=t=>/オール/.test(t)?'a':/・/.test(t)?'t':'r';
+const sbFam=p=>p[0]==='m'?['mR','mT']:['tsumo','menron','nakiron'].includes(p)?['tsumo','menron','nakiron']:['pinT','pinR','chiR','chiT'];
+const sbFamName=p=>p[0]==='m'?'満貫以上':['tsumo','menron','nakiron'].includes(p)?'基本の3つ':'平和・七対子';
+function sbCards(st){
+  const mk=(ps,d)=>ps.flatMap(p=>SB_HANS[p].map(h=>({p,h,d})));
+  let cs;
+  if(st===1)cs=mk(['mR','mT'],false);
+  else if(st===2)cs=mk(['tsumo','menron','nakiron'],false);
+  else if(st===3)cs=mk(['pinT','pinR','chiR','chiT'],false);
+  else cs=mk(['tsumo','menron','nakiron','pinT','pinR','chiR','chiT'],true).concat(mk(['mR','mT'],true).filter(c=>SB_LIM[c.h]));
+  cs.forEach(c=>c.id=c.p+c.h+(c.d?'o':'k'));
+  return cs;
+}
+function sbPickCard(st){
+  const cs=sbCards(st),last=Q&&Q.card?Q.card.id:null;
+  const ws=cs.map(c=>c.id===last?0:(shibu.w[c.id]||1));
+  let r=Math.random()*ws.reduce((a,b)=>a+b,0);
+  for(let i=0;i<cs.length;i++){r-=ws[i];if(r<=0)return cs[i];}
+  return cs[0];
+}
+// 4択：同じ翻の別の表・翻ずれ・親子の取り違えを優先して混ぜる
+function sbChoices(ans,near,pool){
+  const f=sbFmt(ans),seen=new Set([ans]),out=[];
+  const take=a=>{for(const t of a){if(out.length>=3)break;if(t&&sbFmt(t)===f&&!seen.has(t)){seen.add(t);out.push(t);}}};
+  take(shuffle(near.slice()));take(shuffle(pool.slice()));
+  return out.concat([ans]).sort((a,b)=>payVal(a)-payVal(b));
+}
+function sbCardOpts(c){
+  const ans=sbVal(c.p,c.h,c.d),near=[];
+  sbFam(c.p).forEach(p=>{if(p!==c.p&&SB_HANS[p].includes(c.h))near.push(sbVal(p,c.h,c.d));});
+  if(c.p[0]==='m'){
+    // 満貫以上は隣の区分（跳満・倍満…）と取り違えやすい
+    const L=[5,6,8,11,13],i=L.indexOf(c.h>=13?13:c.h>=11?11:c.h>=8?8:c.h>=6?6:5);
+    [i-1,i+1,i-2,i+2].forEach(j=>{if(L[j])near.push(sbVal(c.p,L[j],c.d));});
+  }else[-1,1].forEach(dh=>{if(SB_HANS[c.p].includes(c.h+dh))near.push(sbVal(c.p,c.h+dh,c.d));});
+  near.push(sbVal(c.p,c.h,!c.d));
+  const pool=sbCards(shibu.stage).map(x=>sbVal(x.p,x.h,x.d));
+  return{ans,opts:sbChoices(ans,near,pool)};
+}
+function sbProgress(ok){
+  const st=shibu.stage,a=(shibu.rec[st]=(shibu.rec[st]||[]).concat(ok?1:0).slice(-10));
+  let msg='';
+  if(!shibu.cl[st]&&a.length>=10&&a.reduce((x,y)=>x+y,0)>=8){shibu.cl[st]=1;msg=`<br><b>段階${st}クリア！</b>${st<6?' 次の段階に進めます':''}`;}
+  saveSb();return msg;
+}
+function sbWeight(id,ok,slow){const w=shibu.w[id]||1;shibu.w[id]=!ok?Math.min(10,w+3):slow?w+.5:Math.max(1,w*.6);}
+function courseSeg(){
+  const a=shibu.rec[shibu.stage]||[];
+  return `<div class="crs"><div class="seg" role="group" aria-label="コース"><button type="button" data-course="normal" aria-pressed="${course==='normal'}">通常</button><button type="button" data-course="shibu" aria-pressed="${course==='shibu'}">渋川式</button></div>`
+    +(course==='shibu'?`<span class="sbname">段階${shibu.stage}：${SB_STAGES[shibu.stage].n}${a.length?`（直近 ${a.reduce((x,y)=>x+y,0)}/${a.length}）`:''}</span>`:'')+'</div>'
+    +(course==='shibu'?`<div class="stg">${[1,2,3,4,5,6].map(i=>`<button type="button" data-stage="${i}" aria-pressed="${shibu.stage===i}">${shibu.cl[i]?'✓':i}<small>${SB_STAGES[i].s}</small></button>`).join('')}</div>`:'');
+}
+function bindCourse(){
+  root.querySelectorAll('[data-course]').forEach(b=>b.onclick=()=>{if(course===b.dataset.course)return;course=b.dataset.course;LS.set('course',course);next();});
+  root.querySelectorAll('[data-stage]').forEach(b=>b.onclick=()=>{shibu.stage=+b.dataset.stage;saveSb();next();});
+}
+function sbTable(pats,d,hl){
+  const man=pats[0][0]==='m',cols=man?[5,6,8,11,13]:[1,2,3,4];
+  const colOf=h=>!man?h:h>=13?13:h>=11?11:h>=8?8:h>=6?6:5;
+  const head=cols.map(h=>`<th class="num">${man?SB_LIM[h]:h+'翻'}</th>`).join('');
+  const rows=pats.map(p=>`<tr><td>${SB_PAT[p].n}${SB_PAT[p].tbl?`<small class="sbf">${SB_PAT[p].tbl}</small>`:''}</td>${cols.map(h=>{
+    const ok=man||SB_HANS[p].includes(h);if(!ok)return '<td class="num">—</td>';
+    const v=sbVal(p,h,d),pt=payText(h,SB_PAT[p].fu,d,!!SB_PAT[p].ts,rules),lim=!man&&pt.limit?(/切り上げ/.test(pt.limit)?'切上満貫':pt.limit):'';
+    let c='num';if(hl&&hl.p===p&&colOf(hl.h)===h)c+=' hi';else if(hl&&hl.mine===v)c+=' mine';
+    return `<td class="${c}">${v.replace('・','・<wbr>').replace('オール','<wbr>オール')}${lim?`<small class="sbf">${lim}</small>`:''}</td>`;}).join('')}</tr>`).join('');
+  return `<div class="scroll"><table class="sbt"><tr><th>${d?'親':'子'}</th>${head}</tr>${rows}</table></div>`;
+}
+function sbTip(p,d){
+  const row=pp=>SB_HANS[pp].map(h=>sbVal(pp,h,d)).join(' → ');
+  if(p[0]==='m')return '5翻 満貫・6〜7翻 跳満・8〜10翻 倍満・11〜12翻 三倍満・13翻〜 役満。'+(d?'親は子の1.5倍':'子のロンは 8000・12000・16000・24000・32000');
+  const t={tsumo:'ツモは翻数だけ見て「30符の表」',menron:'門前ロンは「40符の表」。4翻で満貫が確定',nakiron:'鳴いてロンは「30符の表」',
+    pinT:'平和ツモは「20符の表」（平和＋ツモで2翻から）',pinR:'平和ロンは「30符の表」（鳴いてロンと同じ）',
+    chiR:'七対子は「25符の表」（2翻から）。4翻でも満貫にならない',chiT:'七対子ツモは「25符の表」（3翻から）'}[p];
+  return `${t}：${row(p)}`;
+}
+function sbDealerTip(p,h,ts){
+  const k=sbVal(p,h,false),o=sbVal(p,h,true);
+  return ts?`親のツモは、子がツモったときに<b>親が払う額</b>の「オール」（子 ${k} → 親 ${o}）`:`親のロンは子の約1.5倍（子 ${k} → 親 ${o}）。100点単位の切り上げで少しずれる所もある`;
+}
+
+// ---- 段階1〜4：表の暗記カード ----
+function sbNewCard(){const card=sbPickCard(shibu.stage);const o=sbCardOpts(card);Q={type:'score',sb:'card',card,ans:o.ans,opts:o.opts,sel:null,done:false,t0:Date.now()};sbDrawCard();}
+function sbDrawCard(){
+  const c=Q.card,P=SB_PAT[c.p],d=Q.done;
+  const hint=P.ts?(c.d?'親のツモは「◯オール」で答えます':'子のツモは「子の払い・親の払い」で答えます'):'';
+  render(`${courseSeg()}
+    <div class="qhead"><p class="prompt">何点？</p>${stHTML()}</div>
+    <div class="felt"><div class="bigq"><span class="bq-who ${c.d?'em':''}">${c.d?'親':'子'}</span><span class="bq-pat">${P.n}</span><span class="bq-han">${c.h}<small>翻</small></span></div>${hint?`<p class="rnote">${hint}</p>`:''}</div>
+<!--CTRL-->
+    <p class="hint">${d?'表のどこを見ればよいかは解説で確認できます':'答えをタップすると、すぐ答え合わせします'}</p>
+    <div class="pad c2">${Q.opts.map(o=>{let k='';if(d){if(o===Q.ans)k='ok';else if(o===Q.sel)k='ng';}
+      return `<button class="key ${k}" type="button" data-v="${o}" aria-pressed="${Q.sel===o}" ${d?'disabled':''}>${o}</button>`;}).join('')}</div>`);
+  bindCourse();
+  if(!d){root.querySelectorAll('.pad .key').forEach(b=>b.onclick=()=>{Q.sel=b.dataset.v;sbCheckCard();});setGo('答えをタップ',false,null);}
+  else setGo('次の問題',true,next);
+}
+function sbCheckCard(){
+  const c=Q.card;Q.done=true;Q.ok=Q.sel===Q.ans;
+  sbWeight(c.id,Q.ok,Date.now()-Q.t0>7000);record(Q.ok);const msg=sbProgress(Q.ok);sbDrawCard();
+  const P=SB_PAT[c.p];
+  openEx(Q.ok,`${c.d?'親':'子'}・${P.n}・${c.h}翻 → <b>${Q.ans}</b>${msg}`,
+    `<div><h3>どの表を見るか</h3><p>${sbTip(c.p,c.d)}</p>${c.d?`<p class="sub">${sbDealerTip(c.p,c.h,P.ts)}</p>`:''}</div>
+     <div><h3>${sbFamName(c.p)}の表（${c.d?'親':'子'}）</h3>${sbTable(sbFam(c.p),c.d,{p:c.p,h:c.h,mine:Q.ok?null:Q.sel})}
+     <p class="sub">青＝正解${Q.ok?'':'　赤枠＝あなたの答え'}</p></div>`);
+}
+
+// ---- 段階5・6：手牌から ----
+const sbFuX=r=>r.fuLines.filter(f=>!/^副底|^門前ロン|^ツモ$|^副露の平和形/.test(f[0]));
+function sbPatOf(ctx,r){if(r.chiitoi)return ctx.tsumo?'chiT':'chiR';if(r.pinfu)return ctx.tsumo?'pinT':'pinR';return ctx.tsumo?'tsumo':(r.menzen?'menron':'nakiron');}
+const sbGroup=p=>/^pin/.test(p)?'pin':/^chi/.test(p)?'chi':p;
+function sbGenHand(st){
+  const want=st===5?pick([0,1,1,2]):null;
+  for(let k=0;k<400;k++){
+    const q=genScoreQ(rules,st===5?pick([2,3,3]):pick([1,2,2,3]));if(!q)continue;
+    const p=sbPatOf(q.ctx,q.r);
+    if(st===5){
+      if(q.r.chiitoi||q.r.pinfu||q.r.han>4)continue;
+      const s=Math.max(0,(q.r.fu-SB_PAT[p].fu)/10);
+      if(want===2?s<2:s!==want)continue;
+    }else if(q.r.han>7)continue;
+    return{...q,p};
+  }
+  return null;
+}
+function sbSplit(r,win){
+  if(r.chiitoi)return r.pairs.map(t=>grp([t,t],t===win?'和了':'対子',t===win)).join('');
+  const nm=g=>g.k==='shun'?(g.open?'チー':'順子'):g.k==='kan'?(g.open?'明槓':'暗槓'):(g.open?(g.ronKou?'明刻(ロン)':'ポン'):'暗刻');
+  const pw=!r.groups.some(g=>g.win);
+  return r.groups.map(g=>grp(groupTiles(g),nm(g)+(g.win?'・和了':''),g.win)).join('')+grp([r.pair,r.pair],'雀頭'+(pw?'・和了':''),pw);
+}
+function sbStepRule(ts){return ts?'ツモは手牌の符が<b>10符で1段階・20符で2段階</b>（渋川式の「12符・22符」の例外）':'手牌の符が<b>12符で1段階・22符で2段階</b>上がる';}
+function sbStepsExplain(Q2){
+  const {ctx,r,p}=Q2,B=SB_PAT[p].fu,xs=sbFuX(r),x=xs.reduce((a,f)=>a+f[1],0),st=Math.max(0,(r.fu-B)/10);
+  const rows=xs.length?xs.map(f=>`<tr><td>${f[0]}</td><td class="num">${f[1]}符</td></tr>`).join('')+`<tr class="total"><td>手牌の符</td><td class="num">${x}符</td></tr>`
+    :'<tr><td>符のつく刻子・待ち・雀頭なし</td><td class="num">0符</td></tr>';
+  return `<div><h3>手牌の符（刻子・槓子・待ち・雀頭）</h3><table>${rows}</table></div>
+    <div><h3>段階の決め方</h3><p>${SB_PAT[p].n}は「${B}符の表」が基準。${sbStepRule(ctx.tsumo)}。</p>
+    <p>この手は ${x}符 → <b>${st}段階</b>上げて <b>${r.fu}符</b>で計算します。</p>
+    ${st?`<p class="sub">覚え方：50符は「25符（七対子）の表を1翻上」、60符は「30符の表を1翻上」で読めます。</p>`:''}</div>`;
+}
+function sbNewSteps(){
+  const q=sbGenHand(5);if(!q){shibu.stage=4;return sbNewCard();}
+  const st=Math.max(0,(q.r.fu-SB_PAT[q.p].fu)/10);
+  Q={type:'score',sb:'steps',...q,ans:Math.min(3,st),sel:null,done:false};sbDrawSteps();
+}
+function sbDrawSteps(){
+  const {ctx,p}=Q,d=Q.done;
+  render(`${courseSeg()}
+    <div class="qhead"><p class="prompt">符で何段階上がる？</p>${stHTML()}</div>
+    <div class="felt"><div class="chips"><span class="chip em">${SB_PAT[p].n}（${SB_PAT[p].fu}符の表）</span><span class="chip">${KAZE[ctx.bakaze-27]}場</span><span class="chip">${KAZE[ctx.jikaze-27]}家</span></div>${handScoreHTML(ctx)}</div>
+<!--CTRL-->
+    <p class="hint">刻子・槓子・待ち・雀頭の符を足します。12符で1段階、22符で2段階（ツモは10符・20符）</p>
+    <div class="pad c4">${[0,1,2,3].map(n=>{let k='';if(d){if(n===Q.ans)k='ok';else if(n===Q.sel)k='ng';}
+      return `<button class="key ${k}" type="button" data-v="${n}" aria-pressed="${Q.sel===n}" ${d?'disabled':''}>${n===3?'3〜':n}<small>段階</small></button>`;}).join('')}</div>`);
+  bindCourse();
+  if(!d){root.querySelectorAll('.pad .key').forEach(b=>b.onclick=()=>{Q.sel=+b.dataset.v;Q.done=true;Q.ok=Q.sel===Q.ans;record(Q.ok);const msg=sbProgress(Q.ok);sbDrawSteps();
+      openEx(Q.ok,`<b>${Q.ans}段階</b>（${Q.r.fu}符）・${Q.r.han}翻 → ${Q.r.pay.text}${msg}`,sbStepsExplain(Q)+`<div><h3>手の分け方</h3><div class="split">${sbSplit(Q.r,Q.ctx.win)}</div></div>`,handScoreHTML(Q.ctx));});
+    setGo('答えをタップ',false,null);}
+  else setGo('次の問題',true,next);
+}
+// 総合：①アガリ方 ②翻 ③段階 ④点数 を順に答える
+const SB_AG=[['tsumo','ツモ'],['menron','門前ロン'],['nakiron','鳴いてロン'],['pin','平和'],['chi','七対子']];
+function sbNewTotal(){
+  const q=sbGenHand(6);if(!q){return sbNewCard();}
+  const {ctx,r,p}=q,g=sbGroup(p),need=!['pin','chi'].includes(g)&&r.han<5;
+  const steps=need?Math.min(3,Math.max(0,(r.fu-SB_PAT[p].fu)/10)):'x';
+  const ans=r.pay.text,near=[];
+  [20,25,30,40,50,60].forEach(f=>{if(f!==r.fu)near.push(payText(r.han,f,ctx.dealer,ctx.tsumo,rules).text);});
+  [-1,1].forEach(dh=>{if(r.han+dh>=1)near.push(payText(r.han+dh,r.fu,ctx.dealer,ctx.tsumo,rules).text);});
+  near.push(payText(r.han,r.fu,!ctx.dealer,ctx.tsumo,rules).text);
+  const pool=[1,2,3,4,5,6].map(h=>payText(h,30,ctx.dealer,ctx.tsumo,rules).text);
+  Q={type:'score',sb:'total',...q,g,steps,ans,opts:sbChoices(ans,near,pool),a:null,h:null,s:null,pt:null,step:'a',done:false};
+  sbDrawTotal();
+}
+function sbDrawTotal(){
+  const {ctx,r}=Q,d=Q.done;
+  const lab={a:'① アガリ方',h:'② 翻数',s:'③ 段階',pt:'④ 点数'};
+  const val={a:Q.a?SB_AG.find(x=>x[0]===Q.a)[1]:'—',h:Q.h!=null?Q.h+'<small>翻</small>':'—',s:Q.s==null?'—':Q.s==='x'?'不要':Q.s+'<small>段階</small>',pt:Q.pt||'—'};
+  const right={a:Q.a===Q.g,h:Q.h===r.han,s:Q.s===Q.steps,pt:Q.pt===Q.ans};
+  const stepH=['a','h','s','pt'].map(s=>{let c=Q.step===s&&!d?'on':'';if(d)c=(right[s]?'ok':'ng')+(Q.step===s?' on':'');
+    return `<button class="step ${c}" type="button" data-step="${s}"><span>${lab[s]}</span><b>${val[s]}</b></button>`;}).join('');
+  const key=(v,label,cur,ansV)=>{let k='';if(d){if(v===ansV)k='ok';else if(v===cur)k='ng';}return `<button class="key ${k}" type="button" data-v="${v}" aria-pressed="${cur===v}" ${d?'disabled':''}>${label}</button>`;};
+  let pad;
+  if(Q.step==='a')pad=`<div class="pad c3">${SB_AG.map(([v,l])=>key(v,l,Q.a,Q.g)).join('')}</div>`;
+  else if(Q.step==='h')pad=`<div class="pad c4">${range(1,14).map(n=>key(n,n+'<small>翻</small>',Q.h,r.han)).join('')}</div>`;
+  else if(Q.step==='s')pad=`<div class="pad c4">${[0,1,2,3].map(n=>key(n,(n===3?'3〜':n)+'<small>段階</small>',Q.s,Q.steps)).join('')}</div><div class="pad c2" style="margin-top:6px">${key('x','不要<small>平和・七対子・5翻以上</small>',Q.s,Q.steps)}</div>`;
+  else pad=`<div class="pad c2">${Q.opts.map(o=>key(o,o,Q.pt,Q.ans)).join('')}</div>`;
+  const hint={a:'表を選ぶ：ツモ／門前ロン／鳴いてロン／平和／七対子',h:'役とドラを合計した翻数',s:'手牌の符で何段階上がるか（12符で1・22符で2、ツモは10符・20符）',pt:ctx.tsumo?(ctx.dealer?'親のツモは「◯オール」':'子のツモは「子の払い・親の払い」'):(ctx.dealer?'親のロン':'子のロン')}[Q.step];
+  render(`${courseSeg()}
+    <div class="qhead"><p class="prompt">渋川式で何点？</p>${stHTML()}</div>
+    <div class="felt">
+      <div class="chips"><span class="chip">${KAZE[ctx.bakaze-27]}場</span><span class="chip ${ctx.dealer?'em':''}">${KAZE[ctx.jikaze-27]}家・${ctx.dealer?'親':'子'}</span>${ctx.riichi?'<span class="chip">立直</span>':''}<span class="chip">ドラ${ctx.dora}${ctx.riichi&&ctx.dora?'（裏込み）':''}</span></div>
+      ${handScoreHTML(ctx)}
+    </div>
+<!--CTRL-->
+    <div class="steps" style="grid-template-columns:repeat(4,1fr)">${stepH}</div>
+    <p class="hint">${hint}</p>
+    ${pad}`);
+  bindCourse();
+  root.querySelectorAll('.step').forEach(b=>b.onclick=()=>{Q.step=b.dataset.step;sbDrawTotal();});
+  if(!d){
+    root.querySelectorAll('.pad .key').forEach(b=>b.onclick=()=>{
+      const raw=b.dataset.v,v=Q.step==='h'?+raw:Q.step==='s'?(raw==='x'?'x':+raw):raw;
+      Q[Q.step]=v;
+      const nx=['a','h','s','pt'].find(s=>Q[s]==null);if(nx)Q.step=nx;
+      sbDrawTotal();
+    });
+    setGo('答え合わせ',Q.a!=null&&Q.h!=null&&Q.s!=null&&Q.pt!=null,sbCheckTotal);
+  }else setGo('次の問題',true,next);
+}
+function sbCheckTotal(){
+  const {ctx,r,p,g}=Q;Q.done=true;
+  const okA=Q.a===g,okH=Q.h===r.han,okS=Q.s===Q.steps,okP=Q.pt===Q.ans;
+  Q.ok=okA&&okH&&okS&&okP;record(Q.ok);const msg=sbProgress(Q.ok);
+  Q.step=!okA?'a':!okH?'h':!okS?'s':'pt';sbDrawTotal();
+  const mk=o=>`<span class="okx ${o?'o':'x'}">${o?'○':'×'}</span>`;
+  const yaku=r.yaku.map(y=>`${y.name} ${y.han}`).join('・')+(ctx.dora?`・ドラ${ctx.dora}`:'');
+  let s3;
+  if(Q.steps==='x')s3=r.han>=5?`${r.han}翻なので符は関係なし（段階は不要）`:`${SB_PAT[p].n}は符が固定（段階は不要）`;
+  else{const x=sbFuX(r).reduce((a,f)=>a+f[1],0);s3=`手牌の符 ${x}符 → ${Q.steps}段階 → ${r.fu}符の表（${sbStepRule(ctx.tsumo).replace(/<\/?b>/g,'')}）`;}
+  const fam=sbFam(p),tbl=r.han<=4&&(Q.steps===0||Q.steps==='x')?sbTable(fam,ctx.dealer,{p,h:r.han}):r.han<=4?`<p class="sub">${r.fu}符の表（${ctx.dealer?'親':'子'}・${ctx.tsumo?'ツモ':'ロン'}）</p>${quickRow(r.fu,ctx.dealer,ctx.tsumo,r.han)}`:sbTable(['mR','mT'],ctx.dealer,{p:ctx.tsumo?'mT':'mR',h:r.han});
+  openEx(Q.ok,`${SB_PAT[p].n}・${r.han}翻${Q.steps>0?`・${Q.steps}段階`:''} → <b>${r.pay.text}</b>${r.pay.limit?'（'+r.pay.limit+'）':''}${msg}`,
+    `<div><h3>渋川式の手順</h3><ol class="proc">
+      <li>アガリ方：<b>${SB_PAT[p].n}</b> → ${p.startsWith('chi')?'25符':p==='pinT'?'20符':SB_PAT[p].fu+'符'}の表 ${mk(okA)}</li>
+      <li>翻数：${yaku} ＝ <b>${r.han}翻</b> ${mk(okH)}</li>
+      <li>段階：${s3} ${mk(okS)}</li>
+      <li>表を引く：<b>${r.pay.text}</b> ${mk(okP)}</li></ol></div>
+     <div><h3>見る表</h3>${tbl}</div>
+     ${Q.steps!=='x'?sbStepsExplain(Q):''}
+     <div><h3>手の分け方</h3><div class="split">${sbSplit(r,ctx.win)}</div></div>`,handScoreHTML(ctx));
+}
+function newShibu(){const st=shibu.stage;if(st<=4)sbNewCard();else if(st===5)sbNewSteps();else sbNewTotal();}
+function shibuGuide(){
+  const T=(pats,d)=>sbTable(pats,d,null);
+  return `<h2>渋川式点数計算</h2><div class="guide"><ul>
+    <li>最初は<b>符・親・平和と七対子を無視</b>して、子の点数を「アガリ方の表」で覚える</li>
+    <li>覚える順番：満貫以上 → 基本の3つの表 → 平和・七対子 → 親 → 最後に符</li>
+    <li>基本の3つ：<b>ツモ＝30符の表</b>、<b>門前ロン＝40符の表</b>、<b>鳴いてロン＝30符の表</b></li>
+    <li>親のロンは子の約1.5倍。親のツモは「子のツモで親が払う額」のオール</li>
+    <li>符：手牌の符（刻子・槓子・待ち・雀頭）が<b>12符で1段階、22符で2段階</b>上がる。<b>ツモだけは10符・20符</b></li>
+    <li>50符は「25符の表を1翻上」、60符は「30符の表を1翻上」で読める</li></ul></div>
+    <p class="sub" style="font-weight:700">満貫以上</p>${T(['mR','mT'],false)}${T(['mR','mT'],true)}
+    <p class="sub" style="font-weight:700">基本の3つの表</p>${T(['tsumo','menron','nakiron'],false)}${T(['tsumo','menron','nakiron'],true)}
+    <p class="sub" style="font-weight:700">平和・七対子</p>${T(['pinT','pinR','chiR','chiT'],false)}${T(['pinT','pinR','chiR','chiT'],true)}
+    <p class="sub">切り上げ満貫：${rules.kiriage?'あり（4翻30符・3翻60符は満貫）':'なし'}（設定で変更できます）</p>`;
 }
 
 // ===== 待ち当て =====
@@ -1756,7 +2046,7 @@ function openGuide(){
       <li>まず向聴数を戻さない打牌を選び、その中で受け入れが一番広いものを選ぶ</li></ul></div>
       <p class="sub">役・打点・安全度は考えていないので、実戦では状況で正解が変わることもあります。</p>`
   };
-  openSheet(g[mode]+`<button class="primary" type="button" id="cls">閉じる</button>`,()=>$('#cls').onclick=closeSheet);
+  openSheet((mode==='score'&&course==='shibu'?shibuGuide():g[mode])+`<button class="primary" type="button" id="cls">閉じる</button>`,()=>$('#cls').onclick=closeSheet);
 }
 const SETS=[
   ['kuitan','喰いタン','副露した手でも断幺九を認める',[['あり',true],['なし',false]]],
