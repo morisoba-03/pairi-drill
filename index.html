@@ -542,6 +542,26 @@ button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
 .sbt td.hi small.sbf{color:inherit}
 .proc{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:8px;font-size:14px}
 .okx{font-weight:800;margin-left:4px} .okx.o{color:var(--good)} .okx.x{color:var(--bad)}
+.sbhelp{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;min-height:30px;margin-left:auto}
+.sbh{display:flex;flex-direction:column;gap:16px;font-size:14px;line-height:1.65}
+.sbh section{display:flex;flex-direction:column;gap:6px}
+.sbh h3{margin:0;font-size:15.5px;display:flex;align-items:center;gap:8px}
+.sbh h3 i{font-style:normal;flex:none;width:22px;height:22px;border-radius:50%;background:var(--sel);color:var(--sel-ink);font-size:12px;display:grid;place-items:center}
+.sbh p{margin:0}
+.sbh .lead{font-size:15px}
+.sbh .cmp{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sbh .cmp div{border:1px solid var(--line);border-radius:12px;padding:8px 10px;font-size:13px}
+.sbh .cmp b{display:block;font-size:12px;color:var(--muted);margin-bottom:2px}
+.sbh .cmp .em{border-color:var(--sel)}
+.sbh .flow{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;counter-reset:f}
+.sbh .flow li{border:1px solid var(--line);border-radius:12px;padding:8px 10px 8px 40px;position:relative;counter-increment:f}
+.sbh .flow li::before{content:counter(f);position:absolute;left:10px;top:9px;width:22px;height:22px;border-radius:50%;background:var(--sel);color:var(--sel-ink);font-weight:800;font-size:12px;display:grid;place-items:center}
+.sbh .flow small{display:block;color:var(--muted);font-size:12px}
+.sbh .sbex{background:var(--bg);border-radius:12px;padding:10px 12px;font-size:13.5px}
+.sbh table{border-collapse:collapse;width:100%;font-size:13px}
+.sbh td,.sbh th{color:var(--ink);padding:6px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.sbh th{font-size:12px;color:var(--muted)}
+.sbh td:first-child,.sbh th:first-child{white-space:nowrap}
 @media (max-width:360px){.brand{font-size:17px}.lv button{padding:6px 9px}}
 @media (prefers-reduced-motion:reduce){.ex{animation:none}.pick,.pick .tile{transition:none}}
 .back{flex:none;align-self:center;border:1px solid var(--line);background:var(--surface);border-radius:999px;font-size:13px;font-weight:700;padding:0 12px;min-height:36px;white-space:nowrap}
@@ -1587,12 +1607,13 @@ function sbWeight(id,ok,slow){const w=shibu.w[id]||1;shibu.w[id]=!ok?Math.min(10
 function courseSeg(){
   const a=shibu.rec[shibu.stage]||[];
   return `<div class="crs"><div class="seg" role="group" aria-label="コース"><button type="button" data-course="normal" aria-pressed="${course==='normal'}">通常</button><button type="button" data-course="shibu" aria-pressed="${course==='shibu'}">渋川式</button></div>`
-    +(course==='shibu'?`<span class="sbname">段階${shibu.stage}：${SB_STAGES[shibu.stage].n}${a.length?`（直近 ${a.reduce((x,y)=>x+y,0)}/${a.length}）`:''}</span>`:'')+'</div>'
+    +(course==='shibu'?`<span class="sbname">段階${shibu.stage}：${SB_STAGES[shibu.stage].n}${a.length?`（直近 ${a.reduce((x,y)=>x+y,0)}/${a.length}）`:''}</span><button type="button" class="sbhelp" data-sbhelp>？ 渋川式とは</button>`:'')+'</div>'
     +(course==='shibu'?`<div class="stg">${[1,2,3,4,5,6].map(i=>`<button type="button" data-stage="${i}" aria-pressed="${shibu.stage===i}">${shibu.cl[i]?'✓':i}<small>${SB_STAGES[i].s}</small></button>`).join('')}</div>`:'');
 }
 function bindCourse(){
   root.querySelectorAll('[data-course]').forEach(b=>b.onclick=()=>{if(course===b.dataset.course)return;course=b.dataset.course;LS.set('course',course);next();});
   root.querySelectorAll('[data-stage]').forEach(b=>b.onclick=()=>{shibu.stage=+b.dataset.stage;saveSb();next();});
+  root.querySelectorAll('[data-sbhelp]').forEach(b=>b.onclick=()=>openSheet(shibuGuide()+`<button class="primary" type="button" id="cls">閉じる</button>`,()=>$('#cls').onclick=closeSheet));
 }
 function sbTable(pats,d,hl){
   const man=pats[0][0]==='m',cols=man?[5,6,8,11,13]:[1,2,3,4];
@@ -1788,20 +1809,68 @@ function sbCheckTotal(){
 }
 function newShibu(){const st=shibu.stage;if(st<=4)sbNewCard();else if(st===5)sbNewSteps();else sbNewTotal();}
 function shibuGuide(){
-  const T=(pats,d)=>sbTable(pats,d,null);
-  return `<h2>渋川式点数計算</h2><div class="guide"><ul>
-    <li>最初は<b>符・親・平和と七対子を無視</b>して、子の点数を「アガリ方の表」で覚える</li>
-    <li>覚える順番：満貫以上 → 基本の3つの表 → 平和・七対子 → 親 → 最後に符</li>
-    <li>基本の3つ：<b>ツモ＝30符の表</b>、<b>門前ロン＝40符の表</b>、<b>鳴いてロン＝30符の表</b></li>
-    <li>親のロンは子の約1.5倍。親のツモは「子のツモで親が払う額」のオール</li>
-    <li>4翻は満貫。例外は<b>平和ツモ4翻（1300・2600）</b>と<b>七対子4翻（6400）</b>の2つだけ${rules.kiriage?'':'（切り上げ満貫なしの設定では30符4翻も満貫になりません）'}</li>
-    <li>符：手牌の符（刻子・槓子・待ち・雀頭・ツモ）が<b>12符で1段階、22符で2段階</b>上がる。符で点数が変わるのは<b>3翻まで</b>（切り上げ満貫なしなら4翻まで）</li>
-    <li>符を気にするのは、まず<b>カンがある</b>か<b>1・9・字牌の暗刻がある</b>とき。順子やタンヤオのポンばかりの手は、ほとんど段階が上がらない</li>
-    <li>50符は「25符の表を1翻上」、60符は「30符の表を1翻上」で読める</li></ul></div>
+  const T=(pats,d)=>sbTable(pats,d,null),k=rules.kiriage;
+  return `<h2>渋川式点数計算とは</h2><div class="sbh">
+  <section><p class="lead">符を1つずつ足し算するかわりに、<b>「どうアガったか」で表を1つ選び、翻数でその表を読む</b>覚え方です。プロ雀士の渋川難波さんが、初心者でもすぐ点数を言えるように紹介している方法です。</p></section>
+
+  <section><h3><i>1</i>ふつうの計算との違い</h3>
+    <div class="cmp"><div><b>ふつうの計算</b>符を全部足す → 10符単位に切り上げ → 翻と符で表を引く</div>
+    <div class="em"><b>渋川式</b>アガリ方で表を選ぶ → 翻を数える → 表を読む（符は特別なときだけ）</div></div>
+    <p>ふつうは最初に「符」を覚えるので、ここでつまずく人がほとんどです。渋川式は<b>符を後回し</b>にして、よく出る点数から先に覚えます。</p></section>
+
+  <section><h3><i>2</i>なぜ表を選ぶだけで当たるのか</h3>
+    <p>どの手も、アガリ方ごとに<b>「これより安くはならない」という最低の符</b>が決まっています。そして実際の手は、ほとんどがその最低ラインのままです。</p>
+    <table><tr><th>アガリ方</th><th>最低の符</th><th>理由</th></tr>
+    <tr><td>ツモ</td><td><b>30符</b></td><td>基本の20符＋ツモの2符 → 切り上げで30符</td></tr>
+    <tr><td>門前ロン</td><td><b>40符</b></td><td>基本の20符＋門前ロンの10符。平和でなければ必ず少し符がつくので40符</td></tr>
+    <tr><td>鳴いてロン</td><td><b>30符</b></td><td>符がなくても30符として扱う</td></tr></table>
+    <p>だから「ツモ＝30符の表」「門前ロン＝40符の表」「鳴いてロン＝30符の表」と、<b>アガリ方だけで表が決まります</b>。</p></section>
+
+  <section><h3><i>3</i>点数を出す手順</h3>
+    <ol class="flow">
+      <li><b>アガリ方を見る</b><small>ツモ／門前ロン／鳴いてロン（平和・七対子なら専用の表）</small></li>
+      <li><b>翻数を数える</b><small>役とドラを足す。5翻以上なら満貫以上の表へ</small></li>
+      <li><b>符で段階が上がるか見る</b><small>${k?'3':'4'}翻以下で、カンや1・9・字牌の暗刻があるときだけ</small></li>
+      <li><b>表を読む</b><small>段階が上がったら、その分だけ1つ上の表を読む</small></li></ol>
+    <div class="sbex"><b>例：</b>子がリーチ・タンヤオ・ドラ1（シャボ待ち）で、鳴かずにロン<br>① 門前ロン → 40符の表　② 3翻　③ カンも1・9・字牌の暗刻もない → そのまま　④ <b>5200点</b></div></section>
+
+  <section><h3><i>4</i>覚えるのは3つの表だけ（子）</h3>
+    <table><tr><th></th><th>1翻</th><th>2翻</th><th>3翻</th><th>4翻</th></tr>
+    <tr><td>ツモ</td><td>300・500</td><td>500・1000</td><td>1000・2000</td><td>${k?'満貫':'2000・3900'}</td></tr>
+    <tr><td>門前ロン</td><td>1300</td><td>2600</td><td>5200</td><td>満貫</td></tr>
+    <tr><td>鳴いてロン</td><td>1000</td><td>2000</td><td>3900</td><td>${k?'満貫':'7700'}</td></tr></table>
+    <p>ツモと門前ロンは<b>翻が1つ増えるとほぼ倍</b>。鳴いてロンの3翻だけ3900と半端なので、そのまま覚えます。</p></section>
+
+  <section><h3><i>5</i>あとから足す例外</h3>
+    <table>
+    <tr><td><b>平和</b></td><td>ロンは「鳴いてロン」と同じ表。ツモは専用の表（400・700 → 700・1300 → 1300・2600）。<b>4翻ツモでも満貫にならない</b></td></tr>
+    <tr><td><b>七対子</b></td><td>ロンもツモも合計は同じ（1600 → 3200 → 6400）。<b>4翻でも満貫にならない</b></td></tr>
+    <tr><td><b>親</b></td><td>ロンは子の約1.5倍（2000→2900、5200→7700 など少しずれる所あり）。ツモは、子のツモで親が払う額を全員から「オール」でもらう</td></tr>
+    <tr><td><b>満貫以上</b></td><td>翻数だけで決まる：${k?'4〜':''}5翻 満貫、6〜7翻 跳満、8〜10翻 倍満、11〜12翻 三倍満、13翻〜 役満</td></tr></table></section>
+
+  <section><h3><i>6</i>符で「段階」が上がるとき</h3>
+    <p>カンや1・9・字牌の暗刻などで符が多くたまると、点数が<b>1つ上の表</b>にずれます。これを「段階が上がる」と呼んでいます。</p>
+    <table><tr><th>手牌の符（刻子・槓子・待ち・雀頭・ツモ）</th><th>段階</th></tr>
+    <tr><td>11符まで</td><td>そのまま</td></tr><tr><td>12〜21符</td><td><b>1段階</b>上がる</td></tr><tr><td>22〜31符</td><td><b>2段階</b>上がる</td></tr></table>
+    <div class="sbex"><b>例：</b>鳴いてロン・2翻で、1・9・字牌の暗刻（8符）＋カンチャン待ち（2符）＋役牌の雀頭（2符）＝12符<br>→ 1段階上がって 2000点が <b>2600点</b></div>
+    <p>段階が関係するのは<b>${k?'3':'4'}翻まで</b>です（それ以上はほぼ満貫）。</p></section>
+
+  <section><h3><i>7</i>このアプリでの練習の順番</h3>
+    <table><tr><th>段階</th><th>練習すること</th></tr>
+    <tr><td>1</td><td>満貫以上：翻数から満貫・跳満…を答える</td></tr>
+    <tr><td>2</td><td>基本の3つの表：ツモ・門前ロン・鳴いてロン（子）</td></tr>
+    <tr><td>3</td><td>平和・七対子の表</td></tr>
+    <tr><td>4</td><td>親の点数（ここまでの表を親に置きかえる）</td></tr>
+    <tr><td>5</td><td>手牌を見て、符で何段階上がるか</td></tr>
+    <tr><td>6</td><td>総合：手牌からアガリ方→翻→段階→点数を順に答える</td></tr></table>
+    <p>どの段階も<b>直近10問で8問正解</b>すると「✓」がつきます。間違えた問題はあとで出やすくなります。上の番号ボタンで、いつでも好きな段階に移れます。</p></section>
+
+  <section><h3><i>8</i>早見表</h3>
     <p class="sub" style="font-weight:700">満貫以上</p>${T(['mR','mT'],false)}${T(['mR','mT'],true)}
     <p class="sub" style="font-weight:700">基本の3つの表</p>${T(['tsumo','menron','nakiron'],false)}${T(['tsumo','menron','nakiron'],true)}
     <p class="sub" style="font-weight:700">平和・七対子</p>${T(['pinT','pinR','chiR','chiT'],false)}${T(['pinT','pinR','chiR','chiT'],true)}
-    <p class="sub">切り上げ満貫：${rules.kiriage?'あり（4翻30符・3翻60符は満貫）':'なし'}（設定で変更できます）</p>`;
+    <p class="sub">切り上げ満貫：${k?'あり（4翻30符・3翻60符は満貫）':'なし'}（設定で変更できます）</p></section>
+  </div>`;
 }
 
 // ===== 待ち当て =====
