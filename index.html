@@ -522,7 +522,11 @@ button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
 .crs{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .crs .seg button{min-height:30px;padding:4px 12px}
 .sbname{font-size:12px;font-weight:700;color:var(--muted)}
-.stg{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.stg{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.stg button.mx{border-style:dashed}
+.mixsel{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:12px;font-weight:700;color:var(--muted)}
+.mixsel button{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:3px 9px;font-size:12px;font-weight:700;min-height:28px}
+.mixsel button[aria-pressed="true"]{background:var(--sel);color:var(--sel-ink);border-color:var(--sel)}
 .stg button{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:3px 0;font-weight:800;font-size:15px;line-height:1.15;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:42px}
 .stg button small{font-size:9.5px;font-weight:700;color:var(--muted);white-space:nowrap}
 .stg button[aria-pressed="true"]{background:var(--sel);color:var(--sel-ink);border-color:var(--sel)}
@@ -1581,8 +1585,11 @@ function scoreBody(){
 // ===== 渋川式 =====
 // 符を後回しにして、アガリ方ごとの「表」を覚える方式。段階1〜4は表の暗記カード、5は符の段階、6は実戦形の総合問題
 let course=LS.get('course','normal');if(!['normal','shibu'].includes(course))course='normal';
-let shibu=Object.assign({stage:1,w:{},rec:{},cl:{},seen:{}},LS.get('shibu',{}));
-if(!(shibu.stage>=1&&shibu.stage<=6))shibu.stage=1;
+let shibu=Object.assign({stage:1,w:{},rec:{},cl:{},seen:{},mix:[1,2,3]},LS.get('shibu',{}));
+if(!(shibu.stage>=1&&shibu.stage<=7))shibu.stage=1;
+shibu.mix=(Array.isArray(shibu.mix)?shibu.mix:[]).filter(i=>i>=1&&i<=6);if(!shibu.mix.length)shibu.mix=[1,2,3];
+// ミックス（7）では、選んだステップから1問ごとに出題元を選ぶ。sbCurが今の問題の出題元
+let sbCur=shibu.stage<=6?shibu.stage:shibu.mix[0];
 const saveSb=()=>LS.set('shibu',shibu);
 const SB_PAT={
   tsumo:{n:'ツモ',fu:30,ts:1,tbl:'30符'},menron:{n:'門前ロン',fu:40,ts:0,tbl:'40符'},nakiron:{n:'鳴いてロン',fu:30,ts:0,tbl:'30符'},
@@ -1590,7 +1597,7 @@ const SB_PAT={
   mR:{n:'ロン',fu:30,ts:0},mT:{n:'ツモ',fu:30,ts:1}};
 const SB_HANS={tsumo:[1,2,3,4],menron:[1,2,3,4],nakiron:[1,2,3,4],pinT:[2,3,4],pinR:[1,2,3,4],chiR:[2,3,4],chiT:[3,4],
   mR:[5,6,7,8,9,10,11,12,13],mT:[5,6,8,11,13]};
-const SB_STAGES=[null,{n:'満貫以上',s:'満貫↑'},{n:'基本の3つの表',s:'3つの表'},{n:'平和・七対子',s:'平和七対'},{n:'親の点数',s:'親'},{n:'符で段階アップ',s:'符の段階'},{n:'総合（実戦形）',s:'総合'}];
+const SB_STAGES=[null,{n:'満貫以上',s:'満貫↑'},{n:'基本の3つの表',s:'3つの表'},{n:'平和・七対子',s:'平和七対'},{n:'親の点数',s:'親'},{n:'符で段階アップ',s:'符の段階'},{n:'総合（実戦形）',s:'総合'},{n:'ミックス',s:'ミックス'}];
 const SB_LIM={5:'満貫',6:'跳満',8:'倍満',11:'三倍満',13:'役満'};
 const sbVal=(p,h,d)=>payText(h,SB_PAT[p].fu,d,!!SB_PAT[p].ts,rules).text;
 const sbFmt=t=>/オール/.test(t)?'a':/・/.test(t)?'t':'r';
@@ -1642,13 +1649,20 @@ function sbWeight(id,ok,slow){const w=shibu.w[id]||1;shibu.w[id]=!ok?Math.min(10
 function courseSeg(){
   const a=shibu.rec[shibu.stage]||[];
   return `<div class="crs"><div class="seg" role="group" aria-label="コース"><button type="button" data-course="normal" aria-pressed="${course==='normal'}">通常</button><button type="button" data-course="shibu" aria-pressed="${course==='shibu'}">渋川式</button></div>`
-    +(course==='shibu'?`<span class="sbname">ステップ${shibu.stage}：${SB_STAGES[shibu.stage].n}${a.length?`（直近 ${a.reduce((x,y)=>x+y,0)}/${a.length}）`:''}</span><span class="sbbtns"><button type="button" class="sbhelp em" data-lesson>📖 解説</button><button type="button" class="sbhelp" data-sbhelp>？ 渋川式とは</button></span>`:'')+'</div>'
-    +(course==='shibu'?`<div class="stg">${[1,2,3,4,5,6].map(i=>`<button type="button" data-stage="${i}" aria-pressed="${shibu.stage===i}">${shibu.cl[i]?'✓':i}<small>${SB_STAGES[i].s}</small></button>`).join('')}</div>`:'');
+    +(course==='shibu'?`<span class="sbname">${shibu.stage===7?`ミックス（この問題：ステップ${sbCur}）`:`ステップ${shibu.stage}：${SB_STAGES[shibu.stage].n}`}${a.length?`（直近 ${a.reduce((x,y)=>x+y,0)}/${a.length}）`:''}</span><span class="sbbtns"><button type="button" class="sbhelp em" data-lesson>📖 解説</button><button type="button" class="sbhelp" data-sbhelp>？ 渋川式とは</button></span>`:'')+'</div>'
+    +(course==='shibu'?`<div class="stg">${[1,2,3,4,5,6,7].map(i=>`<button type="button" class="${i===7?'mx':''}" data-stage="${i}" aria-pressed="${shibu.stage===i}">${i===7?'🔀':shibu.cl[i]?'✓':i}<small>${SB_STAGES[i].s}</small></button>`).join('')}</div>`
+      +(shibu.stage===7?`<div class="mixsel">出題するステップ：${[1,2,3,4,5,6].map(i=>`<button type="button" data-mix="${i}" aria-pressed="${shibu.mix.includes(i)}">${i} ${SB_STAGES[i].s}</button>`).join('')}</div>`:''):'');
 }
 function bindCourse(){
   root.querySelectorAll('[data-course]').forEach(b=>b.onclick=()=>{if(course===b.dataset.course)return;course=b.dataset.course;LS.set('course',course);next();});
   root.querySelectorAll('[data-stage]').forEach(b=>b.onclick=()=>{shibu.stage=+b.dataset.stage;saveSb();next();});
-  root.querySelectorAll('[data-lesson]').forEach(b=>b.onclick=()=>openLesson(shibu.stage));
+  root.querySelectorAll('[data-lesson]').forEach(b=>b.onclick=()=>openLesson(shibu.stage===7?sbCur:shibu.stage));
+  root.querySelectorAll('[data-mix]').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.mix,on=shibu.mix.includes(i);
+    if(on&&shibu.mix.length===1)return; // 最低1つは残す
+    shibu.mix=on?shibu.mix.filter(x=>x!==i):shibu.mix.concat(i).sort((a,b)=>a-b);saveSb();
+    if(!shibu.mix.includes(sbCur))next();else{b.setAttribute('aria-pressed',String(!on));}
+  });
   root.querySelectorAll('[data-sbhelp]').forEach(b=>b.onclick=()=>openSheet(shibuGuide()+`<button class="primary" type="button" id="cls">閉じる</button>`,()=>{$('#cls').onclick=closeSheet;bindBasics(null);}));
 }
 function sbTable(pats,d,hl){
@@ -1676,7 +1690,7 @@ function sbDealerTip(p,h,ts){
 }
 
 // ---- 段階1〜4：表の暗記カード ----
-function sbNewCard(){const card=sbPickCard(shibu.stage);const o=sbCardOpts(card);Q={type:'score',sb:'card',card,ans:o.ans,opts:o.opts,sel:null,done:false,t0:Date.now()};sbDrawCard();}
+function sbNewCard(){const card=sbPickCard(sbCur);const o=sbCardOpts(card);Q={type:'score',sb:'card',card,ans:o.ans,opts:o.opts,sel:null,done:false,t0:Date.now()};sbDrawCard();}
 function sbDrawCard(){
   const c=Q.card,P=SB_PAT[c.p],d=Q.done;
   const hint=P.ts?(c.d?'親のツモは「◯オール」で答えます':'子のツモは「子の払い・親の払い」で答えます'):'';
@@ -1753,7 +1767,7 @@ function sbStepsExplain(Q2){
     ${st?`<p class="sub">覚え方：50符は「25符（七対子）の表を1翻上」、60符は「30符の表を1翻上」で読めます。</p>`:''}</div>`;
 }
 function sbNewSteps(){
-  const q=sbGenHand(5);if(!q){shibu.stage=4;return sbNewCard();}
+  const q=sbGenHand(5);if(!q){sbCur=4;return sbNewCard();}
   const st=Math.max(0,(q.r.fu-SB_PAT[q.p].fu)/10);
   Q={type:'score',sb:'steps',...q,ans:Math.min(3,st),sel:null,done:false};sbDrawSteps();
 }
@@ -1844,9 +1858,10 @@ function sbCheckTotal(){
      <div><h3>手の分け方</h3><div class="split">${sbSplit(r,ctx.win)}</div></div>`,handScoreHTML(ctx));
 }
 function newShibu(){
-  const st=shibu.stage;if(st<=4)sbNewCard();else if(st===5)sbNewSteps();else sbNewTotal();
-  // 初めて開いたステップは、先に解説を見せる
-  if(!shibu.seen[st]){shibu.seen[st]=1;saveSb();openLesson(st);}
+  const st=sbCur=shibu.stage===7?pick(shibu.mix):shibu.stage;
+  if(st<=4)sbNewCard();else if(st===5)sbNewSteps();else sbNewTotal();
+  // 初めて開いたステップは、先に解説を見せる（ミックスでは出さない）
+  if(shibu.stage!==7&&!shibu.seen[st]){shibu.seen[st]=1;saveSb();openLesson(st);}
 }
 function shibuGuide(){
   const T=(pats,d)=>sbTable(pats,d,null),k=rules.kiriage;
