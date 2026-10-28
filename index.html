@@ -542,7 +542,34 @@ button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
 .sbt td.hi small.sbf{color:inherit}
 .proc{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:8px;font-size:14px}
 .okx{font-weight:800;margin-left:4px} .okx.o{color:var(--good)} .okx.x{color:var(--bad)}
-.sbhelp{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;min-height:30px;margin-left:auto}
+.sbbtns{margin-left:auto;display:flex;gap:6px}
+.sbhelp{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;min-height:30px}
+.sbhelp.em{background:var(--sel);color:var(--sel-ink);border-color:var(--sel)}
+.lesson .lgoal{border:2px solid var(--sel);border-radius:12px;padding:10px 12px;font-size:14.5px}
+.lesson .lgoal b{display:block;font-size:12px;color:var(--muted)}
+.lesson h3{border-left:4px solid var(--sel);padding-left:8px}
+.lesson .lword{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:13.5px}
+.lesson .lword dt{font-weight:800}
+.lesson .lword dd{margin:0}
+.lesson .lt td,.lesson .lt th{font-size:13px}
+.lesson .lt tr.odd td{background:var(--bg)}
+.lesson .lt small{font-size:10px;color:var(--warn);font-weight:800;margin-left:4px}
+.lesson .lbox{background:var(--bg);border-radius:12px;padding:10px 12px;font-size:13.5px}
+.lesson .lul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px}
+.lesson .lsteps{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:6px}
+.lesson .lflow{display:flex;align-items:stretch;gap:4px;flex-wrap:wrap}
+.lesson .lflow div{flex:1 1 0;min-width:76px;border:1px solid var(--line);border-radius:10px;padding:6px 8px;font-size:13px;line-height:1.45;text-align:center}
+.lesson .lflow small{display:block;font-size:11px;color:var(--muted)}
+.lesson .lflow span{align-self:center;color:var(--muted);font-weight:800}
+.lesson .lhand{--tw:24px;gap:10px 10px;padding:10px;background:var(--bg);border-radius:12px}
+.lesson .lq{border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:14px}
+.lesson .lq summary{cursor:pointer;font-weight:700}
+.lesson .lq summary::after{content:'　▶ 答え';font-size:12px;color:var(--muted);font-weight:700}
+.lesson .lq[open] summary::after{content:''}
+.lesson .lq div{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line)}
+.lesson .lng{border:1px solid var(--line);border-radius:12px;padding:8px 12px;display:flex;flex-direction:column;gap:2px;font-size:13.5px}
+.lesson .lng span{font-weight:800;margin-right:6px}
+.lesson .lng .x{color:var(--bad)} .lesson .lng .o{color:var(--good)}
 .sbh{display:flex;flex-direction:column;gap:16px;font-size:14px;line-height:1.65}
 .sbh section{display:flex;flex-direction:column;gap:6px}
 .sbh h3{margin:0;font-size:15.5px;display:flex;align-items:center;gap:8px}
@@ -1546,7 +1573,7 @@ function scoreBody(){
 // ===== 渋川式 =====
 // 符を後回しにして、アガリ方ごとの「表」を覚える方式。段階1〜4は表の暗記カード、5は符の段階、6は実戦形の総合問題
 let course=LS.get('course','normal');if(!['normal','shibu'].includes(course))course='normal';
-let shibu=Object.assign({stage:1,w:{},rec:{},cl:{}},LS.get('shibu',{}));
+let shibu=Object.assign({stage:1,w:{},rec:{},cl:{},seen:{}},LS.get('shibu',{}));
 if(!(shibu.stage>=1&&shibu.stage<=6))shibu.stage=1;
 const saveSb=()=>LS.set('shibu',shibu);
 const SB_PAT={
@@ -1607,12 +1634,13 @@ function sbWeight(id,ok,slow){const w=shibu.w[id]||1;shibu.w[id]=!ok?Math.min(10
 function courseSeg(){
   const a=shibu.rec[shibu.stage]||[];
   return `<div class="crs"><div class="seg" role="group" aria-label="コース"><button type="button" data-course="normal" aria-pressed="${course==='normal'}">通常</button><button type="button" data-course="shibu" aria-pressed="${course==='shibu'}">渋川式</button></div>`
-    +(course==='shibu'?`<span class="sbname">段階${shibu.stage}：${SB_STAGES[shibu.stage].n}${a.length?`（直近 ${a.reduce((x,y)=>x+y,0)}/${a.length}）`:''}</span><button type="button" class="sbhelp" data-sbhelp>？ 渋川式とは</button>`:'')+'</div>'
+    +(course==='shibu'?`<span class="sbname">段階${shibu.stage}：${SB_STAGES[shibu.stage].n}${a.length?`（直近 ${a.reduce((x,y)=>x+y,0)}/${a.length}）`:''}</span><span class="sbbtns"><button type="button" class="sbhelp em" data-lesson>📖 解説</button><button type="button" class="sbhelp" data-sbhelp>？ 渋川式とは</button></span>`:'')+'</div>'
     +(course==='shibu'?`<div class="stg">${[1,2,3,4,5,6].map(i=>`<button type="button" data-stage="${i}" aria-pressed="${shibu.stage===i}">${shibu.cl[i]?'✓':i}<small>${SB_STAGES[i].s}</small></button>`).join('')}</div>`:'');
 }
 function bindCourse(){
   root.querySelectorAll('[data-course]').forEach(b=>b.onclick=()=>{if(course===b.dataset.course)return;course=b.dataset.course;LS.set('course',course);next();});
   root.querySelectorAll('[data-stage]').forEach(b=>b.onclick=()=>{shibu.stage=+b.dataset.stage;saveSb();next();});
+  root.querySelectorAll('[data-lesson]').forEach(b=>b.onclick=()=>openLesson(shibu.stage));
   root.querySelectorAll('[data-sbhelp]').forEach(b=>b.onclick=()=>openSheet(shibuGuide()+`<button class="primary" type="button" id="cls">閉じる</button>`,()=>$('#cls').onclick=closeSheet));
 }
 function sbTable(pats,d,hl){
@@ -1807,7 +1835,11 @@ function sbCheckTotal(){
      ${Q.steps!=='x'?sbStepsExplain(Q):''}
      <div><h3>手の分け方</h3><div class="split">${sbSplit(r,ctx.win)}</div></div>`,handScoreHTML(ctx));
 }
-function newShibu(){const st=shibu.stage;if(st<=4)sbNewCard();else if(st===5)sbNewSteps();else sbNewTotal();}
+function newShibu(){
+  const st=shibu.stage;if(st<=4)sbNewCard();else if(st===5)sbNewSteps();else sbNewTotal();
+  // 初めて開いた段階は、先に解説を見せる
+  if(!shibu.seen[st]){shibu.seen[st]=1;saveSb();openLesson(st);}
+}
 function shibuGuide(){
   const T=(pats,d)=>sbTable(pats,d,null),k=rules.kiriage;
   return `<h2>渋川式点数計算とは</h2><div class="sbh">
@@ -1872,6 +1904,122 @@ function shibuGuide(){
     <p class="sub">切り上げ満貫：${k?'あり（4翻30符・3翻60符は満貫）':'なし'}（設定で変更できます）</p></section>
   </div>`;
 }
+
+// ---- 段階ごとの解説（初心者向け） ----
+const LZ={
+  goal:t=>`<div class="lgoal"><b>この段階のゴール</b>${t}</div>`,
+  sec:(t,b)=>`<section><h3>${t}</h3>${b}</section>`,
+  q:(q,a)=>`<details class="lq"><summary>${q}</summary><div>${a}</div></details>`,
+  ng:(x,o)=>`<div class="lng"><p><span class="x">✕</span>${x}</p><p><span class="o">○</span>${o}</p></div>`,
+  word:a=>`<dl class="lword">${a.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`,
+  tl:(arr,cap,w)=>grp(arr,cap,w),
+  hand:gs=>`<div class="split lhand">${gs.join('')}</div>`,
+  flow:a=>`<div class="lflow">${a.map(x=>`<div>${x}</div>`).join('<span>→</span>')}</div>`
+};
+function shibuLesson(st){
+  const k=rules.kiriage,v=(p,h,d)=>sbVal(p,h,!!d),T=(pats,d)=>sbTable(pats,!!d,null);
+  const start=`<p class="sub">読み終えたら「閉じる」で練習に戻れます。この解説は上の「📖 解説」でいつでも開けます。</p>`;
+  let h='';
+  if(st===1){
+    const L=[5,6,8,11,13],rng={5:k?'4〜5翻':'5翻',6:'6〜7翻',8:'8〜10翻',11:'11〜12翻',13:'13翻〜'},mul={5:'基準',6:'×1.5',8:'×2',11:'×3',13:'×4'};
+    h=LZ.goal('翻数を見て「満貫」「跳満」などの名前と、子の点数をすぐ言えるようになる')
+    +LZ.sec('まず言葉の確認',LZ.word([['翻（はん）','役とドラの合計。多いほど点数が高い'],['子（こ）','親以外の3人。この段階は子の点数だけ練習します'],['ロン','他の人が捨てた牌でアガること。捨てた1人が全額払う'],['ツモ','自分で引いた牌でアガること。3人で分けて払う']]))
+    +LZ.sec('覚えること：5つの区分',`<p>翻が多い手は、符を気にせず<b>翻数だけ</b>で点数が決まります。</p>
+      <table class="lt"><tr><th>名前</th><th>翻数</th><th>ロン</th><th>ツモ</th><th></th></tr>${L.map(x=>`<tr><td><b>${SB_LIM[x]}</b></td><td>${rng[x]}</td><td class="num">${v('mR',x)}</td><td class="num">${v('mT',x).replace('・','・<wbr>')}</td><td class="sub">${mul[x]}</td></tr>`).join('')}</table>
+      <p>満貫の<b>8000点</b>を基準にすると、跳満は1.5倍、倍満は2倍、三倍満は3倍、役満は4倍です。</p>`)
+    +LZ.sec('ツモの点数の読み方',`<p>ツモは「<b>子が払う額・親が払う額</b>」の2つで答えます。</p>
+      <div class="lbox"><b>2000・4000</b> ＝ 子2人が2000点ずつ、親が4000点を払う（合計8000点）</div>
+      <p>親は子の<b>2倍</b>払います。合計すると、ロンと同じ点数になります。</p>`)
+    +LZ.sec('例題（タップで答え）',LZ.q('子が7翻でロン','6〜7翻は<b>跳満</b> → <b>12000点</b>')+LZ.q('子が9翻でツモ','8〜10翻は<b>倍満</b> → 16000点を3人で分けて <b>4000・8000</b>')+LZ.q('子が13翻でロン','13翻以上は<b>役満</b> → <b>32000点</b>'))
+    +LZ.sec('よくある間違い',LZ.ng('7翻を「倍満」と言ってしまう','倍満は<b>8翻から</b>。6・7翻はまだ跳満')+LZ.ng('ツモで合計の「8000」を選ぶ','ツモは<b>払う額</b>で答える → 2000・4000'));
+  }else if(st===2){
+    h=LZ.goal('子が1〜4翻でアガったとき、<b>アガリ方を見て3つの表のどれかを選び</b>、点数を答えられるようになる')
+    +LZ.sec('まず言葉の確認',LZ.word([['門前（メンゼン）','ポン・チー（鳴き）を1回もしていない状態'],['鳴き','他の人の捨て牌をもらってポン・チーすること']]))
+    +LZ.sec('どの表を使う？',`<p>見るのは2つだけです。「ツモかロンか」と「鳴いたかどうか」。</p>
+      ${LZ.flow(['アガリ方は？','<b>ツモ</b><br>→ ツモの表<small>鳴いていても同じ</small>','<b>ロン</b><br>→ 鳴いた？'])}
+      ${LZ.flow(['ロンで…','鳴いていない<br>→ <b>門前ロンの表</b>','鳴いた<br>→ <b>鳴いてロンの表</b>'])}`)
+    +LZ.sec('覚える3つの表（子）',`${T(['tsumo','menron','nakiron'])}
+      <ul class="lul"><li><b>ツモ</b>：翻が1つ増えると倍。1翻だけ端数が出て 300・500</li>
+      <li><b>門前ロン</b>：1300 → 2600 → 5200 ときれいに倍。鳴かずにがんばったぶん、少し高い</li>
+      <li><b>鳴いてロン</b>：1000 → 2000 → <b>3900</b>。3翻だけ半端なので、そのまま覚える</li>
+      <li>4翻は${k?'どれも<b>満貫（8000）</b>':'門前ロンは満貫、ツモと鳴いてロンは満貫の少し手前（切り上げ満貫なしの設定のため）'}</li></ul>
+      <p class="sub">口に出して覚えると早いです：「ゴミ（300・500）・ゴトウ・センニセン」「イチサン・ニロク・ゴミニー」「セン・ニセン・ザンク」</p>`)
+    +LZ.sec('例題（タップで答え）',LZ.q('鳴かずにリーチして、ロン。2翻','鳴いていないロン → 門前ロンの表 → <b>2600</b>')+LZ.q('ポンして、ロン。3翻','鳴いたロン → 鳴いてロンの表 → <b>3900</b>')+LZ.q('チーして、ツモ。2翻','ツモは鳴いていてもツモの表 → <b>500・1000</b>'))
+    +LZ.sec('よくある間違い',LZ.ng('鳴かずにロンしたのに 1000・2000 と言う','鳴いていないロンは<b>門前ロンの表</b>（1300・2600・5200）')+LZ.ng('鳴いてツモったのに、別の表を探す','ツモは<b>鳴いても鳴かなくても同じ表</b>'));
+  }else if(st===3){
+    h=LZ.goal('平和（ピンフ）と七対子（チートイツ）だけは<b>専用の表</b>を使う。その2つを答えられるようになる')
+    +LZ.sec('平和ってどんな手？',`<p>鳴かずに、<b>順子（3つ並び）だけ</b>で作り、<b>両面待ち</b>でアガった手です。雀頭（2枚の組）は役牌以外。</p>
+      ${LZ.hand([LZ.tl([1,2,3],'順子'),LZ.tl([13,14,15],'順子'),LZ.tl([23,24,25],'順子'),LZ.tl([20,21,22],'両面で和了',1),LZ.tl([17,17],'雀頭')])}
+      <p>作りやすい形なので、点数は<b>わざと安め</b>に決められています。</p>`)
+    +LZ.sec('平和の点数',`<ul class="lul"><li><b>ロン</b>：門前なのに「<b>鳴いてロンの表</b>」と同じ（${v('pinR',1)}・${v('pinR',2)}・${v('pinR',3)}）</li>
+      <li><b>ツモ</b>：専用の表。平和＋ツモで<b>2翻から</b>始まる：${v('pinT',2)} → ${v('pinT',3)} → ${v('pinT',4)}</li>
+      <li>平和ツモは<b>4翻でも満貫にならない</b>（${v('pinT',4)}）</li></ul>
+      <p class="sub">語感：「ヨンナナ・ナナトザン・イチサンニロク」</p>`)
+    +LZ.sec('七対子ってどんな手？',`<p>同じ牌2枚の組（対子）を<b>7つ</b>そろえた手です。これだけで<b>2翻</b>あります。</p>
+      ${LZ.hand([0,4,11,16,19,24,27].map((t,i)=>LZ.tl([t,t],i===6?'和了':'対子',i===6)))}`)
+    +LZ.sec('七対子の点数',`<ul class="lul"><li>ロンもツモも<b>合計は同じ</b>：2翻 ${v('chiR',2)} → 3翻 ${v('chiR',3)} → 4翻 ${v('chiR',4)}</li>
+      <li>ツモは「門前ツモ」の1翻がつくので<b>3翻から</b>：${v('chiT',3)}（合計${v('chiR',3)}）</li>
+      <li>七対子も<b>4翻でも満貫にならない</b>（${v('chiR',4)}）</li></ul>`)
+    +LZ.sec('表で確認（子）',T(['pinT','pinR','chiR','chiT']))
+    +LZ.sec('例題（タップで答え）',LZ.q('リーチ・平和・ツモ（3翻）','平和ツモの表 → <b>'+v('pinT',3)+'</b>')+LZ.q('平和・タンヤオでロン（2翻）','平和のロンは鳴いてロンと同じ → <b>'+v('pinR',2)+'</b>')+LZ.q('七対子・ドラ2でロン（4翻）','七対子は4翻でも満貫にならない → <b>'+v('chiR',4)+'</b>'))
+    +LZ.sec('よくある間違い',LZ.ng('平和のロンを門前ロンの表で答える（2600など）','平和のロンは<b>鳴いてロンの表</b>（2000）')+LZ.ng('4翻だから満貫と答える','平和ツモと七対子は<b>4翻でも満貫にならない</b>'));
+  }else if(st===4){
+    const pr=[['nakiron',1],['menron',1],['nakiron',2],['menron',2],['nakiron',3],['menron',3],['chiR',2],['chiR',3],['chiR',4]];
+    const odd=(p,hh)=>{const c=payVal(v(p,hh)),o=payVal(v(p,hh,1));return o!==c*1.5;};
+    h=LZ.goal('ここまでの子の点数を、<b>親の点数に置きかえ</b>られるようになる')
+    +LZ.sec('親とは',`<p>その局の東家（最初にサイコロを振る人）です。親がアガると、点数は<b>子のおよそ1.5倍</b>になります。</p>`)
+    +LZ.sec('親のロン：子の1.5倍',`<table class="lt"><tr><th>子のロン</th><th></th><th>親のロン</th></tr>${pr.map(([p,hh])=>`<tr class="${odd(p,hh)?'odd':''}"><td class="num">${v(p,hh)}</td><td>→</td><td class="num"><b>${v(p,hh,1)}</b>${odd(p,hh)?'<small>ずれる</small>':''}</td></tr>`).join('')}
+      <tr><td class="num">8000（満貫）</td><td>→</td><td class="num"><b>12000</b></td></tr></table>
+      <p>ほとんどはそのまま1.5倍です。<b>「ずれる」印</b>の所だけ、計算の端数のせいで少し違うので、そのまま覚えます（2000 → 2900「ニッキュウ」、5200 → 7700 など）。</p>`)
+    +LZ.sec('親のツモ：「オール」',`<p>親がツモると、子3人が<b>全員同じ額</b>を払います。これを「◯オール」と言います。</p>
+      <div class="lbox">子がツモったときの <b>親が払う額（右側の大きい方）</b> ＝ 親がツモったときのオール</div>
+      ${LZ.flow([`子のツモ<br>${v('tsumo',2)}`,`右の<b>${v('tsumo',2).split('・')[1]}</b>を`,`親のツモ<br><b>${v('tsumo',2,1)}</b>`])}
+      <table class="lt"><tr><th>子のツモ</th><th></th><th>親のツモ</th></tr>${[['tsumo',1],['tsumo',3],['pinT',3],['chiT',3],['mT',5]].map(([p,hh])=>`<tr><td class="num">${v(p,hh)}</td><td>→</td><td class="num"><b>${v(p,hh,1)}</b></td></tr>`).join('')}</table>`)
+    +LZ.sec('例題（タップで答え）',LZ.q('親が鳴かずにロン。2翻','子なら2600 → 1.5倍で <b>'+v('menron',2,1)+'</b>')+LZ.q('親がリーチ・平和・ツモ（3翻）','子なら '+v('pinT',3)+' → 右の1300をオールで <b>'+v('pinT',3,1)+'</b>')+LZ.q('親が鳴いてロン。2翻','子なら2000 → 1.5倍の3000ではなく <b>'+v('nakiron',2,1)+'</b>'))
+    +LZ.sec('よくある間違い',LZ.ng('親のツモで、子の払いの小さい方（左側）をオールにする','オールにするのは<b>右側（親が払う額）</b>')+LZ.ng('親の鳴いてロン2翻を 3000 と言う','端数のずれで <b>2900</b>'));
+  }else if(st===5){
+    const m=k?3:4;
+    h=LZ.goal('手牌を見て、点数が<b>何段階上がるか</b>（0・1・2・3〜）を答えられるようになる')
+    +LZ.sec('段階ってなに？',`<p>段階2〜4で覚えた表は「符が一番少ない手」の点数です。手牌に<b>符が多くたまる形</b>があると、点数が1つ上の表にずれます。これを「段階が上がる」と呼びます。</p>
+      <p>考えるのは<b>平和・七対子以外</b>で、<b>${m}翻以下</b>の手だけです（それより上は満貫以上なので関係なし）。</p>`)
+    +LZ.sec('符がつくもの',`<table class="lt"><tr><th>形</th><th>2〜8の牌</th><th>1・9・字牌</th></tr>
+      <tr><td>ポンした刻子（明刻）</td><td class="num">2符</td><td class="num">4符</td></tr>
+      <tr><td>自分でそろえた刻子（暗刻）</td><td class="num">4符</td><td class="num"><b>8符</b></td></tr>
+      <tr><td>カン（明槓）</td><td class="num">8符</td><td class="num"><b>16符</b></td></tr>
+      <tr><td>カン（暗槓）</td><td class="num"><b>16符</b></td><td class="num"><b>32符</b></td></tr></table>
+      <p class="sub">覚え方：基本は2符。<b>1・9・字牌なら2倍、暗刻なら2倍、カンなら4倍</b>。順子（3つ並び）は0符。</p>
+      <table class="lt"><tr><td>待ち</td><td>カンチャン・ペンチャン・単騎（1枚待ち）なら <b>2符</b></td></tr>
+      <tr><td>雀頭</td><td>役牌（白・發・中・場風・自風）なら <b>2符</b></td></tr>
+      <tr><td>ツモ</td><td>ツモでアガったら <b>2符</b></td></tr></table>`)
+    +LZ.sec('段階の決め方',`${LZ.flow(['<b>符を足す</b>','12符〜<br>→ <b>1段階</b>','22符〜<br>→ <b>2段階</b>','32符〜<br>→ <b>3段階</b>'])}
+      <p>11符までなら段階は<b>0</b>（そのまま）。まずは<b>カン</b>と<b>1・9・字牌の暗刻</b>を探すと早いです。どちらもなければ、たいてい0段階です。</p>`)
+    +LZ.sec('例1：1段階（ツモ）',LZ.hand([LZ.tl([33,33,33],'中の暗刻 8符'),LZ.tl([2,3,4],'順子 0'),LZ.tl([14,15,16],'順子 0'),LZ.tl([19,20,21],'カンチャン 2符',1),LZ.tl([13,13],'雀頭 0')])+`<p>8＋2＋ツモ2 ＝ <b>12符 → 1段階</b></p>`)
+    +LZ.sec('例2：0段階（ロン）',LZ.hand([LZ.tl([13,13,13],'5筒ポン 2符'),LZ.tl([1,2,3],'順子 0'),LZ.tl([23,24,25],'順子 0'),LZ.tl([21,22,23],'両面 0',1),LZ.tl([7,7],'雀頭 0')])+`<p>2符だけ → 12符に届かないので <b>0段階</b></p>`)
+    +LZ.sec('例3：2段階（ロン）',LZ.hand([LZ.tl([22,22,22,22],'5索の暗槓 16符'),LZ.tl([9,9,9],'1筒の暗刻 8符'),LZ.tl([1,2,3],'順子 0'),LZ.tl([14,15,16],'両面 0',1),LZ.tl([5,5],'雀頭 0')])+`<p>16＋8 ＝ <b>24符 → 2段階</b></p>`)
+    +LZ.sec('よくある間違い',LZ.ng('シャボ待ちでロンして完成した刻子を、暗刻（8符）で数える','ロンで完成した刻子は<b>ポンと同じ扱い</b>（1・9・字牌なら4符）')+LZ.ng('ツモの2符を数え忘れる','ツモでアガったら<b>2符</b>を足す')+LZ.ng('平和や七対子で段階を考える','平和・七対子は符が決まっているので<b>段階はない</b>'));
+  }else{
+    h=LZ.goal('手牌を見て、<b>アガリ方 → 翻数 → 段階 → 点数</b>の順に、ひとりで点数を出せるようになる')
+    +LZ.sec('4つの手順',`<ol class="lsteps">
+      <li><b>アガリ方</b>：七対子の形？ → 七対子。平和が成立？ → 平和。それ以外は「ツモ」「門前ロン」「鳴いてロン」</li>
+      <li><b>翻数</b>：役の翻とドラを足す（下の表）</li>
+      <li><b>段階</b>：平和・七対子、または${k?4:5}翻以上なら「不要」。それ以外は段階5のやり方で符を数える</li>
+      <li><b>点数</b>：表を引く。親なら段階4のやり方で置きかえる</li></ol>`)
+    +LZ.sec('よく出る役の翻数',`<table class="lt"><tr><th>役</th><th>門前</th><th>鳴き</th></tr>
+      ${[['リーチ','1','—'],['門前ツモ','1','—'],['平和','1','—'],['タンヤオ（2〜8だけ）','1','1'],['役牌（白・發・中・場風・自風の刻子）','1','1'],['一盃口','1','—'],['三色同順・一気通貫','2','1'],['対々和・三暗刻・七対子','2','2（七対子は門前のみ）'],['混一色','3','2'],['清一色','6','5'],['ドラ','1枚につき1','同じ']].map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${r[2]}</td></tr>`).join('')}</table>`)
+    +LZ.sec('段階が上がったときの表の読み方',`<p>新しい表を覚えなくても、<b>知っている表で代用</b>できます。</p>
+      <table class="lt"><tr><th>もとの表</th><th>1段階上がると</th></tr>
+      <tr><td>鳴いてロン（30符）</td><td>門前ロンの表と同じ（1300・2600・5200）</td></tr>
+      <tr><td>ツモ（30符）</td><td>平和ツモの表を<b>1翻ずらす</b>（1翻 ${payText(1,40,false,true,rules).text}、2翻 ${payText(2,40,false,true,rules).text}）</td></tr>
+      <tr><td>門前ロン（40符）</td><td>七対子の表を<b>1翻ずらす</b>（1翻 ${payText(1,50,false,false,rules).text}、2翻 ${payText(2,50,false,false,rules).text}）</td></tr>
+      <tr><td>2段階以上</td><td>めったに出ません。出たときは答え合わせの表で確認すれば十分です</td></tr></table>`)
+    +LZ.sec('通しの例題',LZ.hand([LZ.tl([31,31,31],'白ポン 4符'),LZ.tl([26,26,26],'9索の暗刻 8符'),LZ.tl([13,14,15],'順子 0'),LZ.tl([1,2,3],'カンチャン 2符',1),LZ.tl([22,22],'雀頭 0')])
+      +`<p>子が、上の手を<b>ロン</b>（2萬と4萬の間の3萬でアガリ）</p>`
+      +LZ.q('答えを見る',`<ol class="lsteps"><li>ポンしたロン → <b>鳴いてロン</b></li><li>役は白の1翻 → <b>1翻</b></li><li>4＋8＋2 ＝ 14符 → <b>1段階</b></li><li>鳴いてロンが1段階上がる → 門前ロンの表の1翻 → <b>${payText(1,40,false,false,rules).text}</b></li></ol>`))
+    +LZ.sec('よくある間違い',LZ.ng('リーチ・平和・ツモ・ドラ1（4翻）を満貫と答える','平和ツモは<b>4翻でも '+v('pinT',4)+'</b>')+LZ.ng('翻を数えるとき、門前ツモの1翻を忘れる','鳴かずにツモったら<b>門前ツモ 1翻</b>がつく'));
+  }
+  return `<h2>段階${st}：${SB_STAGES[st].n}</h2><div class="sbh lesson">${h}${start}</div>`;
+}
+function openLesson(st){openSheet(shibuLesson(st)+`<button class="primary" type="button" id="cls">閉じる</button>`,()=>$('#cls').onclick=closeSheet);}
 
 // ===== 待ち当て =====
 function newWait(){const q=genWaitQ(levels.wait);Q={type:'wait',...q,sel:new Set(),done:false};drawWait();}
