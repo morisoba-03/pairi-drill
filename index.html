@@ -524,8 +524,9 @@ button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
 .sbname{font-size:12px;font-weight:700;color:var(--muted)}
 .stg{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
 .stg button.mx{border-style:dashed}
-.mixsel{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:12px;font-weight:700;color:var(--muted)}
-.mixsel button{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:3px 9px;font-size:12px;font-weight:700;min-height:28px}
+.mixsel{display:grid;grid-template-columns:auto repeat(6,minmax(0,1fr));align-items:center;gap:3px;font-size:11px;font-weight:700;color:var(--muted)}
+.mixsel button{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:8px;padding:2px 0;font-size:12px;font-weight:800;line-height:1.1;min-height:30px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0}
+.mixsel button small{font-size:8.5px;font-weight:700;white-space:nowrap;overflow:hidden;max-width:100%}
 .mixsel button[aria-pressed="true"]{background:var(--sel);color:var(--sel-ink);border-color:var(--sel)}
 .stg button{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:3px 0;font-weight:800;font-size:15px;line-height:1.15;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:42px}
 .stg button small{font-size:9.5px;font-weight:700;color:var(--muted);white-space:nowrap}
@@ -1651,7 +1652,7 @@ function courseSeg(){
   return `<div class="crs"><div class="seg" role="group" aria-label="コース"><button type="button" data-course="normal" aria-pressed="${course==='normal'}">通常</button><button type="button" data-course="shibu" aria-pressed="${course==='shibu'}">渋川式</button></div>`
     +(course==='shibu'?`<span class="sbname">${shibu.stage===7?`ミックス（この問題：ステップ${sbCur}）`:`ステップ${shibu.stage}：${SB_STAGES[shibu.stage].n}`}${a.length?`（直近 ${a.reduce((x,y)=>x+y,0)}/${a.length}）`:''}</span><span class="sbbtns"><button type="button" class="sbhelp em" data-lesson>📖 解説</button><button type="button" class="sbhelp" data-sbhelp>？ 渋川式とは</button></span>`:'')+'</div>'
     +(course==='shibu'?`<div class="stg">${[1,2,3,4,5,6,7].map(i=>`<button type="button" class="${i===7?'mx':''}" data-stage="${i}" aria-pressed="${shibu.stage===i}">${i===7?'🔀':shibu.cl[i]?'✓':i}<small>${SB_STAGES[i].s}</small></button>`).join('')}</div>`
-      +(shibu.stage===7?`<div class="mixsel">出題するステップ：${[1,2,3,4,5,6].map(i=>`<button type="button" data-mix="${i}" aria-pressed="${shibu.mix.includes(i)}">${i} ${SB_STAGES[i].s}</button>`).join('')}</div>`:''):'');
+      +(shibu.stage===7?`<div class="mixsel"><span>出題</span>${[1,2,3,4,5,6].map(i=>`<button type="button" data-mix="${i}" aria-pressed="${shibu.mix.includes(i)}" aria-label="ステップ${i} ${SB_STAGES[i].n}">${i}<small>${SB_STAGES[i].s}</small></button>`).join('')}</div>`:''):'');
 }
 function bindCourse(){
   root.querySelectorAll('[data-course]').forEach(b=>b.onclick=()=>{if(course===b.dataset.course)return;course=b.dataset.course;LS.set('course',course);next();});
