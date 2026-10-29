@@ -1602,8 +1602,10 @@ const SB_STAGES=[null,{n:'満貫以上',s:'満貫↑'},{n:'基本の3つの表',
 const SB_LIM={5:'満貫',6:'跳満',8:'倍満',11:'三倍満',13:'役満'};
 const sbVal=(p,h,d)=>payText(h,SB_PAT[p].fu,d,!!SB_PAT[p].ts,rules).text;
 const sbFmt=t=>/オール/.test(t)?'a':/・/.test(t)?'t':'r';
-const sbFam=p=>p[0]==='m'?['mR','mT']:['tsumo','menron','nakiron'].includes(p)?['tsumo','menron','nakiron']:['pinT','pinR','chiR','chiT'];
-const sbFamName=p=>p[0]==='m'?'満貫以上':['tsumo','menron','nakiron'].includes(p)?'基本の3つ':'平和・七対子';
+// 満貫以上の行（mR/mT）。'menron' も m で始まるので先頭文字では判定しない
+const sbIsMan=p=>p==='mR'||p==='mT';
+const sbFam=p=>sbIsMan(p)?['mR','mT']:['tsumo','menron','nakiron'].includes(p)?['tsumo','menron','nakiron']:['pinT','pinR','chiR','chiT'];
+const sbFamName=p=>sbIsMan(p)?'満貫以上':['tsumo','menron','nakiron'].includes(p)?'基本の3つ':'平和・七対子';
 function sbCards(st){
   const mk=(ps,d)=>ps.flatMap(p=>SB_HANS[p].map(h=>({p,h,d})));
   let cs;
@@ -1631,7 +1633,7 @@ function sbChoices(ans,near,pool){
 function sbCardOpts(c){
   const ans=sbVal(c.p,c.h,c.d),near=[];
   sbFam(c.p).forEach(p=>{if(p!==c.p&&SB_HANS[p].includes(c.h))near.push(sbVal(p,c.h,c.d));});
-  if(c.p[0]==='m'){
+  if(sbIsMan(c.p)){
     // 満貫以上は隣の区分（跳満・倍満…）と取り違えやすい
     const L=[5,6,8,11,13],i=L.indexOf(c.h>=13?13:c.h>=11?11:c.h>=8?8:c.h>=6?6:5);
     [i-1,i+1,i-2,i+2].forEach(j=>{if(L[j])near.push(sbVal(c.p,L[j],c.d));});
@@ -1667,7 +1669,7 @@ function bindCourse(){
   root.querySelectorAll('[data-sbhelp]').forEach(b=>b.onclick=()=>openSheet(shibuGuide()+`<button class="primary" type="button" id="cls">閉じる</button>`,()=>{$('#cls').onclick=closeSheet;bindBasics(null);}));
 }
 function sbTable(pats,d,hl){
-  const man=pats[0][0]==='m',cols=man?[5,6,8,11,13]:[1,2,3,4];
+  const man=sbIsMan(pats[0]),cols=man?[5,6,8,11,13]:[1,2,3,4];
   const colOf=h=>!man?h:h>=13?13:h>=11?11:h>=8?8:h>=6?6:5;
   const head=cols.map(h=>`<th class="num">${man?SB_LIM[h]:h+'翻'}</th>`).join('');
   const rows=pats.map(p=>`<tr><td>${SB_PAT[p].n}${SB_PAT[p].tbl?`<small class="sbf">${SB_PAT[p].tbl}</small>`:''}</td>${cols.map(h=>{
@@ -1679,7 +1681,7 @@ function sbTable(pats,d,hl){
 }
 function sbTip(p,d){
   const row=pp=>SB_HANS[pp].map(h=>sbVal(pp,h,d)).join(' → ');
-  if(p[0]==='m')return '5翻 満貫・6〜7翻 跳満・8〜10翻 倍満・11〜12翻 三倍満・13翻〜 役満。'+(d?'親は子の1.5倍':'子のロンは 8000・12000・16000・24000・32000');
+  if(sbIsMan(p))return '5翻 満貫・6〜7翻 跳満・8〜10翻 倍満・11〜12翻 三倍満・13翻〜 役満。'+(d?'親は子の1.5倍':'子のロンは 8000・12000・16000・24000・32000');
   const t={tsumo:'ツモは翻数だけ見て「30符の表」。語感は「ゴミ（300・500）・ゴトウ・センニセン」',menron:'門前ロンは「40符の表」。「イチサン・ニロク・ゴミニー」の倍々。4翻で満貫が確定',nakiron:'鳴いてロンは「30符の表」。「セン・ニセン・ザンク」',
     pinT:'平和ツモは「20符の表」（平和＋ツモで2翻から）。「ヨンナナ・ナナトザン・イチサンニロク」。4翻でも満貫にならない',pinR:'平和ロンは「30符の表」（鳴いてロンと同じ）',
     chiR:'七対子は「25符の表」（2翻から）。4翻でも満貫にならない',chiT:'七対子ツモは「25符の表」（3翻から）'}[p];
