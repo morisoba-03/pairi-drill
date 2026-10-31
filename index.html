@@ -583,6 +583,37 @@ button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
 .lesson .lwait td:first-child{--tw:22px;white-space:nowrap;width:1%}
 .lesson .lwait em,.lesson .lnote{font-style:normal;color:var(--bad);font-weight:800}
 .lesson .lnote{font-size:12px;margin-left:6px}
+.ladder{display:flex;flex-wrap:wrap;align-items:flex-start;gap:4px 2px;font-variant-numeric:tabular-nums}
+.ladder i{font-style:normal;color:var(--muted);font-size:11px;align-self:center}
+.lstep{display:flex;flex-direction:column;align-items:center;border:1px solid var(--line);border-radius:8px;padding:3px 5px;min-width:40px;text-align:center}
+.lstep b{font-size:12.5px;line-height:1.25}
+.lstep small{font-size:9.5px;color:var(--muted);font-weight:700;line-height:1.3;margin-top:1px}
+.lstep.from{border:2px solid var(--sel)}
+.lstep.pass{background:var(--bg)}
+.lstep.to{background:var(--sel);color:var(--sel-ink);border-color:var(--sel)}
+.lstep.to small{color:inherit}
+.ref .lt-cap{margin:6px 0 2px;font-weight:800;font-size:13px}
+.ref .rt td small,.ref .rt th small{display:block;font-size:10px;color:var(--muted);font-weight:700}
+.ref .lt small.w{color:var(--warn);font-size:10px;font-weight:800;margin-left:4px}
+.lesson .tbig{font-size:16px;line-height:1.7;background:var(--bg);border-radius:12px;padding:10px 12px;text-align:center}
+.tut{display:flex;flex-direction:column;gap:12px}
+.tbar{height:6px;border-radius:3px;background:var(--bg);overflow:hidden}
+.tbar span{display:block;height:100%;background:var(--sel)}
+.thead{display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--muted)}
+.tbody{min-height:200px}
+.tut h3.th{font-size:18px}
+.tut .tq-num{margin:0;font-size:12px;font-weight:800;color:var(--muted)}
+.tut .tq{font-size:15.5px;line-height:1.7}
+.tut .tq .lhand,.tut .tq .tfelt{margin-top:8px}
+.tut .tpad .key{min-height:52px;font-size:16px}
+.tut .twhy{border-radius:12px;padding:10px 12px;border:2px solid var(--line)}
+.tut .twhy.o{border-color:var(--good)} .tut .twhy.x{border-color:var(--bad)}
+.tut .twhy.o b{color:var(--good)} .tut .twhy.x b{color:var(--bad)}
+.tut .twhy p{margin:4px 0 0}
+.tnav{display:grid;grid-template-columns:1fr 2fr;gap:8px}
+.tend{display:flex;flex-direction:column;gap:8px;text-align:center}
+.tend p{margin:0;font-size:15px}
+.tclose{background:transparent;border:0;color:var(--muted);font-size:13px;font-weight:700;padding:6px;text-decoration:underline}
 .sbh{display:flex;flex-direction:column;gap:16px;font-size:14px;line-height:1.65}
 .sbh section{display:flex;flex-direction:column;gap:6px}
 .sbh h3{margin:0;font-size:15.5px;display:flex;align-items:center;gap:8px}
@@ -1652,14 +1683,15 @@ function sbWeight(id,ok,slow){const w=shibu.w[id]||1;shibu.w[id]=!ok?Math.min(10
 function courseSeg(){
   const a=shibu.rec[shibu.stage]||[];
   return `<div class="crs"><div class="seg" role="group" aria-label="コース"><button type="button" data-course="normal" aria-pressed="${course==='normal'}">通常</button><button type="button" data-course="shibu" aria-pressed="${course==='shibu'}">渋川式</button></div>`
-    +(course==='shibu'?`<span class="sbname">${shibu.stage===7?`ミックス（この問題：ステップ${sbCur}）`:`ステップ${shibu.stage}：${SB_STAGES[shibu.stage].n}`}${a.length?`（直近 ${a.reduce((x,y)=>x+y,0)}/${a.length}）`:''}</span><span class="sbbtns"><button type="button" class="sbhelp em" data-lesson>📖 解説</button><button type="button" class="sbhelp" data-sbhelp>？ 渋川式とは</button></span>`:'')+'</div>'
+    +(course==='shibu'?`<span class="sbname">${shibu.stage===7?`ミックス（この問題：ステップ${sbCur}）`:`ステップ${shibu.stage}：${SB_STAGES[shibu.stage].n}`}${a.length?`（直近 ${a.reduce((x,y)=>x+y,0)}/${a.length}）`:''}</span><span class="sbbtns"><button type="button" class="sbhelp em" data-lesson>📖 解説</button><button type="button" class="sbhelp" data-ref>📋 早見表</button><button type="button" class="sbhelp" data-sbhelp aria-label="渋川式とは">？</button></span>`:'')+'</div>'
     +(course==='shibu'?`<div class="stg">${[1,2,3,4,5,6,7].map(i=>`<button type="button" class="${i===7?'mx':''}" data-stage="${i}" aria-pressed="${shibu.stage===i}">${i===7?'🔀':shibu.cl[i]?'✓':i}<small>${SB_STAGES[i].s}</small></button>`).join('')}</div>`
       +(shibu.stage===7?`<div class="mixsel"><span>出題</span>${[1,2,3,4,5,6].map(i=>`<button type="button" data-mix="${i}" aria-pressed="${shibu.mix.includes(i)}" aria-label="ステップ${i} ${SB_STAGES[i].n}">${i}<small>${SB_STAGES[i].s}</small></button>`).join('')}</div>`:''):'');
 }
 function bindCourse(){
   root.querySelectorAll('[data-course]').forEach(b=>b.onclick=()=>{if(course===b.dataset.course)return;course=b.dataset.course;LS.set('course',course);next();});
   root.querySelectorAll('[data-stage]').forEach(b=>b.onclick=()=>{shibu.stage=+b.dataset.stage;saveSb();next();});
-  root.querySelectorAll('[data-lesson]').forEach(b=>b.onclick=()=>openLesson(shibu.stage===7?sbCur:shibu.stage));
+  root.querySelectorAll('[data-lesson]').forEach(b=>b.onclick=()=>openTutorial(shibu.stage===7?sbCur:shibu.stage));
+  root.querySelectorAll('[data-ref]').forEach(b=>b.onclick=openRef);
   root.querySelectorAll('[data-mix]').forEach(b=>b.onclick=()=>{
     const i=+b.dataset.mix,on=shibu.mix.includes(i);
     if(on&&shibu.mix.length===1)return; // 最低1つは残す
@@ -1766,6 +1798,7 @@ function sbStepsExplain(Q2){
   return `<div><h3>手牌の符（刻子・槓子・待ち・雀頭・ツモ）</h3><table>${rows}</table></div>
     <div><h3>段階の決め方</h3><p>${SB_PAT[p].n}は「${B}符の表」が基準。${sbStepRule(ctx.tsumo)}。</p>
     <p>この手は ${x}符 → <b>${st}段階</b>上げて <b>${r.fu}符</b>で計算します。</p>
+    ${r.fu<=60&&r.han<=4&&sbPos(p,r.han)>=0?`<p>はしごで見ると、${SB_PAT[p].n}・${r.han}翻の位置から<b>${st}つ右</b>：</p>${sbLadderHTML(ctx.dealer,ctx.tsumo,{from:sbPos(p,r.han),to:Math.min(sbPos(p,r.han)+st,sbLadder(ctx.dealer,ctx.tsumo).length-1)})}`:''}
     <p class="sub">まず見るところ：カンがあるか、1・9・字牌の暗刻があるか。どちらもなければ、ほとんど段階は上がりません。</p>
     ${st?`<p class="sub">覚え方：50符は「25符（七対子）の表を1翻上」、60符は「30符の表を1翻上」で読めます。</p>`:''}</div>`;
 }
@@ -1864,7 +1897,7 @@ function newShibu(){
   const st=sbCur=shibu.stage===7?pick(shibu.mix):shibu.stage;
   if(st<=4)sbNewCard();else if(st===5)sbNewSteps();else sbNewTotal();
   // 初めて開いたステップは、先に解説を見せる（ミックスでは出さない）
-  if(shibu.stage!==7&&!shibu.seen[st]){shibu.seen[st]=1;saveSb();openLesson(st);}
+  if(shibu.stage!==7&&!shibu.seen[st]){shibu.seen[st]=1;saveSb();openTutorial(st);}
 }
 function shibuGuide(){
   const T=(pats,d)=>sbTable(pats,d,null),k=rules.kiriage;
@@ -1989,7 +2022,7 @@ function openBasics(ret){openSheet(shibuBasics()+(ret?`<button class="primary" t
 function shibuLesson(st){
   const k=rules.kiriage,v=(p,h,d)=>sbVal(p,h,!!d),T=(pats,d)=>sbTable(pats,!!d,null);
   const pass=LZ.sec('合格の目安',`<p>直近10問で<b>8問正解</b>すると、上の番号に<b>✓</b>がつきます。最初は答え合わせの表を見ながらで大丈夫。間違えた問題ほど、あとで多めに出るので、自然に覚えられます。</p>`);
-  const end=`<p class="sub">読み終えたら「閉じる」で練習に戻れます。この解説は上の「📖 解説」でいつでも開けます。</p>`;
+  const end=`<p class="sub">読み終えたら「閉じる」で練習に戻れます。上の「📖 解説」で、例題つきのチュートリアルをいつでも始められます。</p>`;
   const cardHow=LZ.sec('練習画面の見方と答え方',LZ.how(['画面の真ん中に「<b>子</b>か<b>親</b>」「<b>アガリ方</b>」「<b>翻数</b>」が出ます','下の4つのボタンから、正しい点数をタップします','すぐに○×と、表のどこを見ればよいかが出ます']));
   let h='';
   if(st===1){
@@ -2118,6 +2151,249 @@ function shibuLesson(st){
 }
 function bindBasics(ret){panel.querySelectorAll('[data-basics]').forEach(b=>b.onclick=()=>openBasics(ret));}
 function openLesson(st){openSheet(shibuLesson(st)+`<button class="primary" type="button" id="cls">閉じる</button>`,()=>{$('#cls').onclick=closeSheet;bindBasics(()=>openLesson(st));});}
+
+// ---- 点数のはしご ----
+// 30符→40符→50符と並べると、60符は1翻上の30符と同じ点数になる。だから点数は1本のはしごに並び、
+// 符の1段階＝はしごを1つ右、になる（行き先が60符までの間だけ成り立つ）
+function sbLadder(d,ts){
+  const L=[];
+  for(let i=0;i<14;i++){
+    const h=Math.floor(i/3)+1,fu=30+10*(i%3),pt=payText(h,fu,d,ts,rules);
+    L.push({h,fu,text:pt.text,lim:!!pt.limit});if(pt.limit)break;
+  }
+  return L;
+}
+function sbPos(p,h){const f=SB_PAT[p].fu;return f===20?3*(h-2)+1:f===25?3*(h-2)+2:3*(h-1)+(f-30)/10;}
+function sbLadderHTML(d,ts,o={}){
+  const L=sbLadder(d,ts);
+  return `<div class="ladder">${L.map((x,i)=>{
+    const c=[i===o.from?'from':'',i===o.to?'to':'',o.from!=null&&o.to!=null&&i>o.from&&i<o.to?'pass':''].join(' ');
+    const lab=o.marks&&o.marks[i]?`<small>${o.marks[i]}</small>`:'';
+    return `<span class="lstep ${c}"><b>${x.lim?'満貫':x.text.replace('・','・<wbr>').replace('オール','<wbr>オール')}</b>${lab}</span>`;}).join('<i>→</i>')}</div>`;
+}
+// はしごの各位置に「何のアガリの何翻か」を書く
+function sbLadderMarks(pats){
+  const nm={nakiron:'鳴いて',menron:'門前',chiR:'七対子',tsumo:'ツモ',pinT:'平和',chiT:'七対子'},m={};
+  pats.forEach(p=>SB_HANS[p].forEach(h=>{
+    if(['tsumo','menron','nakiron'].includes(p)&&h>3)return;
+    const i=sbPos(p,h);if(i<0)return;m[i]=(m[i]?m[i]+'<br>':'')+nm[p]+h+'翻';}));
+  return m;
+}
+
+// ---- 早見表（動画で紹介された対応表） ----
+const SB_NICK={'300・500':'ゴミ','500・1000':'ゴトウ','1000・2000':'センニセン','1300':'イチサン','2600':'ニロク','5200':'ゴミニー','1000':'セン','2000':'ニセン','3900':'ザンク','400・700':'ヨンナナ','700・1300':'ナナトザン','1300・2600':'イチサンニロク'};
+function shibuRef(){
+  const v=(p,h,d)=>sbVal(p,h,!!d),k=rules.kiriage;
+  const cell=t=>`${t.replace('・','・<wbr>').replace('オール','<wbr>オール')}${SB_NICK[t]?`<small>${SB_NICK[t]}</small>`:''}`;
+  const row=(lab,cs)=>`<tr><td>${lab}</td>${cs.map(c=>`<td class="num">${c}</td>`).join('')}</tr>`;
+  const sec=(n,t,b)=>`<section><h3><i>${n}</i>${t}</h3>${b}</section>`;
+  const conv=(pairs)=>`<table class="lt"><tr><th>子</th><th></th><th>親</th></tr>${pairs.map(([p,h,lab])=>{const c=v(p,h),o=v(p,h,1),odd=!/・|オール/.test(c)&&payVal(o)!==payVal(c)*1.5;return `<tr class="${odd?'odd':''}"><td>${lab}<br><b>${c}</b></td><td>→</td><td class="num"><b>${o}</b>${odd?'<small class="w">ずれる</small>':''}</td></tr>`;}).join('')}</table>`;
+  const ladRow=(t,d,ts,marks)=>`<p class="lt-cap">${t}</p>${sbLadderHTML(d,ts,{marks})}`;
+  return `<h2>📋 早見表</h2><div class="sbh lesson ref">
+  <p class="sub">動画で紹介された表を、アプリの設定（切り上げ満貫：${k?'あり':'なし'}）に合わせてまとめています。</p>
+  ${sec(1,'基本の9つ（子）',`<table class="lt rt"><tr><th></th><th>ツモ</th><th>鳴いてロン</th><th>門前ロン</th></tr>
+    ${[1,2,3,4].map(h=>row(h+'翻',[cell(v('tsumo',h)),cell(v('nakiron',h)),cell(v('menron',h))])).join('')}</table>
+    <p class="sub">ツモは「子の払い・親の払い」。ツモは鳴いていても同じ</p>`)}
+  ${sec(2,'平和（子）',`<table class="lt rt"><tr><th></th><th>ロン</th><th>ツモ</th></tr>
+    ${[1,2,3,4].map(h=>row(h+'翻',[cell(v('pinR',h)),h>=2?cell(v('pinT',h)):'—'])).join('')}</table>
+    <p class="sub">ロンは鳴いてロンと同じ。ツモは2翻から。<b>4翻ツモでも満貫にならない</b></p>`)}
+  ${sec(3,'七対子（子）',`<table class="lt rt"><tr><th></th><th>ロン</th><th>ツモ</th></tr>
+    ${[2,3,4].map(h=>row(h+'翻',[cell(v('chiR',h)),h>=3?cell(v('chiT',h)):'—'])).join('')}</table>
+    <p class="sub">2翻は七対子だけのロン。ロンとツモの合計は同じ。<b>4翻でも満貫にならない</b></p>`)}
+  ${sec(4,'親のロン（子の約1.5倍）',conv([['nakiron',1,'鳴いて1翻'],['nakiron',2,'鳴いて2翻'],['nakiron',3,'鳴いて3翻'],['menron',1,'門前1翻'],['menron',2,'門前2翻'],['menron',3,'門前3翻'],['chiR',2,'七対子2翻'],['chiR',3,'七対子3翻'],['chiR',4,'七対子4翻']]))}
+  ${sec(5,'親のツモ（子の右側の数をオール）',conv([['tsumo',1,'ツモ1翻'],['tsumo',2,'ツモ2翻'],['tsumo',3,'ツモ3翻'],['pinT',2,'平和ツモ2翻'],['pinT',3,'平和ツモ3翻'],['pinT',4,'平和ツモ4翻'],['chiT',3,'七対子ツモ3翻'],['chiT',4,'七対子ツモ4翻']]))}
+  ${sec(6,'符のポイント',`<table class="lt"><tr><th></th><th>2〜8</th><th>1・9・字牌</th></tr>
+    <tr><td>順子</td><td class="num">0</td><td class="num">0</td></tr>
+    <tr><td>ポンした刻子</td><td class="num">2</td><td class="num">4</td></tr>
+    <tr><td>暗刻</td><td class="num">4</td><td class="num">8</td></tr>
+    <tr><td>明槓</td><td class="num">8</td><td class="num">16</td></tr>
+    <tr><td>暗槓</td><td class="num">16</td><td class="num">32</td></tr></table>
+    <table class="lt"><tr><td>ツモ</td><td>2符（ロンは0）</td></tr><tr><td>待ち</td><td>カンチャン・ペンチャン・単騎 2符（両面・シャボ 0）</td></tr><tr><td>雀頭</td><td>役牌（三元牌・場風・自風）2符</td></tr></table>
+    <p class="sub">合計 <b>12符で1段階、22符で2段階、32符で3段階</b>（平和・七対子以外、${k?3:4}翻まで）</p>`)}
+  ${sec(7,'点数のはしご（1段階＝1つ右）',`${ladRow('子のロン',false,false,sbLadderMarks(['nakiron','menron','chiR']))}${ladRow('子のツモ',false,true,sbLadderMarks(['tsumo','pinT','chiT']))}${ladRow('親のロン',true,false)}${ladRow('親のツモ',true,true)}
+    <p class="sub">はしごが使えるのは、上がったあとが60符までのとき（ふつうは3段階まで）。それより多い符はめったに出ません</p>`)}
+  ${sec(8,'満貫以上',`<table class="lt rt"><tr><th></th><th>子ロン</th><th>子ツモ</th><th>親ロン</th><th>親ツモ</th></tr>
+    ${[5,6,8,11,13].map(h=>row(`${SB_LIM[h]}<br><small>${{5:k?'4〜5翻':'5翻',6:'6〜7翻',8:'8〜10翻',11:'11〜12翻',13:'13翻〜'}[h]}</small>`,[v('mR',h),cell(v('mT',h)),v('mR',h,1),cell(v('mT',h,1))])).join('')}</table>`)}
+  </div>`;
+}
+function openRef(){openSheet(shibuRef()+`<button class="primary" type="button" id="cls">閉じる</button>`,()=>$('#cls').onclick=closeSheet);}
+
+// ---- チュートリアル（スライド＋確認クイズ） ----
+let TU=null;
+const tqKey=t=>payVal(t)||parseFloat(t)||0;
+const tq=(q,ans,ds,why)=>({quiz:1,q,ans,opts:[ans,...shuffle([...new Set(ds)].filter(d=>d!==ans)).slice(0,3)].sort((a,b)=>tqKey(a)-tqKey(b)),why});
+const ts=(h,b)=>({h,b});
+function tutCtx(conc,o){const c=zeros();conc.forEach(t=>c[t]++);return Object.assign({conc:c,melds:[],tsumo:false,riichi:false,bakaze:27,jikaze:28,dora:0,dealer:false,rules},o);}
+function tutHand(ctx){
+  return `<div class="felt tfelt"><div class="chips"><span class="chip">${KAZE[ctx.bakaze-27]}場</span><span class="chip ${ctx.dealer?'em':''}">${KAZE[ctx.jikaze-27]}家・${ctx.dealer?'親':'子'}</span>${ctx.riichi?'<span class="chip">立直</span>':''}<span class="chip">ドラ${ctx.dora}</span></div>${handScoreHTML(ctx)}</div>`;
+}
+// 総合の例題：手牌から実際に計算して、4つの手順の答えを作る
+function tutTotal(ctx,full,title){
+  const r=scoreHand(ctx);if(!r||r.yakuman)return [];
+  const p=sbPatOf(ctx,r),g=sbGroup(p),need=!['pin','chi'].includes(g)&&r.han<=sbMaxStepHan();
+  const st=need?Math.min(3,Math.max(0,(r.fu-SB_PAT[p].fu)/10)):'x',stT=st==='x'?'不要':st+'段階';
+  const agN=SB_AG.find(x=>x[0]===g)[1],ans=r.pay.text;
+  const yaku=r.yaku.map(y=>`${y.name} ${y.han}`).join('・')+(ctx.dora?`・ドラ${ctx.dora}`:'');
+  const x=sbFuX(r),xs=x.reduce((a,f)=>a+f[1],0);
+  const stWhy=st==='x'?(['pin','chi'].includes(g)?`${agN}は符が決まっているので段階は不要`:`${r.han}翻なので段階は不要`):`${x.length?x.map(f=>`${f[0]} ${f[1]}符`).join('＋'):'符のつく形なし'} ＝ ${xs}符 → ${st}段階`;
+  const near=[];[20,25,30,40,50,60].forEach(f=>{if(f!==r.fu)near.push(payText(r.han,f,ctx.dealer,ctx.tsumo,rules).text);});
+  [-1,1].forEach(dh=>{if(r.han+dh>=1)near.push(payText(r.han+dh,r.fu,ctx.dealer,ctx.tsumo,rules).text);});
+  near.push(payText(r.han,r.fu,!ctx.dealer,ctx.tsumo,rules).text);
+  const fmt=t=>/オール/.test(t)?'a':/・/.test(t)?'t':'r';
+  const ds=shuffle(near.filter(t=>t!==ans&&fmt(t)===fmt(ans)));
+  const ptWhy=`${agN}・${r.han}翻${st!=='x'&&st>0?`・${st}段階`:''} → <b>${ans}</b>${ctx.dealer?'（親）':''}`;
+  const H=tutHand(ctx);
+  if(!full)return [tq(`${title}<br>${H}何点？`,ans,ds,`① ${agN}　② ${yaku} ＝ ${r.han}翻　③ ${stWhy}　④ ${ptWhy}`)];
+  return [
+    tq(`${title}<br>${H}① アガリ方は？`,agN,SB_AG.map(x=>x[1]).filter(x=>x!==agN),agWhy(ctx,r,g)),
+    tq(`${title}<br>${H}② 翻数は？`,r.han+'翻',[r.han-1,r.han+1,r.han+2].filter(n=>n>=1).map(n=>n+'翻'),`${yaku} ＝ <b>${r.han}翻</b>`),
+    tq(`${title}<br>${H}③ 段階は？`,stT,['0段階','1段階','2段階','不要'].filter(s=>s!==stT),stWhy),
+    tq(`${title}<br>${H}④ 点数は？`,ans,ds,ptWhy)];
+}
+function agWhy(ctx,r,g){
+  if(g==='chi')return '対子が7つ → <b>七対子</b>';
+  if(g==='pin')return '鳴いていない・全部順子・雀頭が役牌でない・両面待ち → <b>平和</b>';
+  if(ctx.tsumo)return 'ツモでアガった → <b>ツモ</b>（鳴いていても同じ表）';
+  return r.menzen?'鳴かずにロン → <b>門前ロン</b>':'ポン・チーしてロン → <b>鳴いてロン</b>';
+}
+function sbTutSlides(st){
+  const v=(p,h,d)=>sbVal(p,h,!!d),k=rules.kiriage,T=(pats,d)=>sbTable(pats,!!d,null);
+  const H=gs=>LZ.hand(gs),tl=LZ.tl;
+  const S=[];
+  if(st===1){
+    S.push(ts('点数は「翻」で決まる',`<p>役とドラの合計を<b>翻（ハン）</b>と言います。翻が多いほど点数が高くなります。</p><p><b>5翻以上</b>になると、手の形に関係なく<b>翻の数だけ</b>で点数が決まります。このステップでは、その5つの区分を覚えます。</p>`+LZ.basics),
+      ts('満貫（マンガン）＝8000点',`<div class="tbig">5翻 → <b>満貫 8000点</b></div><p>これがすべての基準です。${k?'（4翻もほとんどが満貫になります。ステップ2で出てきます）':''}</p>`),
+      tq('子が<b>5翻</b>でロン。何点？','8000',['5200','12000','16000'],'5翻は満貫 → <b>8000点</b>'),
+      ts('跳満（ハネマン）＝満貫の1.5倍',`<div class="tbig">6〜7翻 → <b>跳満 12000点</b></div><p>8000 × 1.5 ＝ 12000。</p>`),
+      tq('子が<b>6翻</b>でロン。何点？','12000',['8000','16000','18000'],'6〜7翻は跳満 → <b>12000点</b>'),
+      tq('子が<b>7翻</b>でロン。何点？','12000',['8000','16000','24000'],'7翻はまだ<b>跳満</b>。倍満は8翻から'),
+      ts('倍満（バイマン）＝満貫の2倍',`<div class="tbig">8〜10翻 → <b>倍満 16000点</b></div><p>8000 × 2 ＝ 16000。</p>`),
+      tq('子が<b>9翻</b>でロン。何点？','16000',['12000','24000','32000'],'8〜10翻は倍満 → <b>16000点</b>'),
+      ts('三倍満と役満',`<div class="tbig">11〜12翻 → <b>三倍満 24000点</b>（×3）<br>13翻〜 → <b>役満 32000点</b>（×4）</div><p>区切りの翻数は「<b>6・8・11・13</b>」の4つだけ覚えればOK。</p>`),
+      tq('子が<b>11翻</b>でロン。何点？','24000',['16000','32000','18000'],'11〜12翻は三倍満 → <b>24000点</b>'),
+      tq('子が<b>8翻</b>でロン。何点？','16000',['12000','24000','8000'],'8翻からが<b>倍満</b> → 16000点'),
+      tq('子が<b>13翻</b>でロン。何点？','32000',['24000','48000','16000'],'13翻以上は役満 → <b>32000点</b>'),
+      ts('ツモのときの払い方',`<p>ツモは、ほかの3人で分けて払います。<b>親は子の2倍</b>払います。</p><div class="lbox">満貫 8000点をツモ<br>→ 子2人が <b>2000</b>ずつ、親が <b>4000</b><br>→ 答え方は「<b>2000・4000</b>」（子の払い・親の払い）</div>`),
+      tq('子が<b>5翻</b>でツモ。何点？',v('mT',5),['1000・2000','3000・6000','4000・8000'],'満貫8000点 → <b>2000・4000</b>'),
+      tq('子が<b>6翻</b>でツモ。何点？',v('mT',6),['2000・4000','4000・8000','6000・12000'],'跳満12000点 → <b>3000・6000</b>'),
+      tq('子が<b>10翻</b>でツモ。何点？',v('mT',8),['3000・6000','6000・12000','8000・16000'],'10翻は倍満16000点 → <b>4000・8000</b>'),
+      ts('まとめ',T(['mR','mT'])));
+  }else if(st===2){
+    S.push(ts('4翻までは「アガリ方」で決まる',`<p>1〜4翻の点数は、翻数に加えて<b>アガリ方</b>で変わります。見るのは2つだけです。</p>
+      <div class="lbox"><b>質問1：ツモ？ロン？</b><br>ツモ → <b>ツモの表</b>（鳴いていても同じ）</div><div class="lbox"><b>質問2（ロンのとき）：鳴いた？</b><br>鳴いていない → <b>門前ロン</b>　鳴いた → <b>鳴いてロン</b></div>`+LZ.basics),
+      ts('門前ロン：1300 → 2600 → 5200',`<p>鳴かずにロン。翻が1つ増えるごとに<b>ぴったり2倍</b>。</p><div class="tbig">1翻 <b>1300</b> → 2翻 <b>2600</b> → 3翻 <b>5200</b></div><p class="sub">「イチサン・ニロク・ゴミニー」</p>`),
+      tq('鳴かずに<b>ロン</b>。<b>1翻</b>。何点？','1300',['1000','1500','2000'],'門前ロンの1翻 → <b>1300</b>'),
+      tq('鳴かずに<b>ロン</b>。<b>3翻</b>。何点？','5200',['3900','5800','6400'],'1300 → 2600 → <b>5200</b>（倍々）'),
+      ts('鳴いてロン：1000 → 2000 → 3900',`<p>ポンやチーをしてからロン。門前ロンより少し安い。</p><div class="tbig">1翻 <b>1000</b> → 2翻 <b>2000</b> → 3翻 <b>3900</b></div><p>3翻だけ4000にならず<b>3900</b>。そのまま覚えます。</p><p class="sub">「セン・ニセン・ザンク」</p>`),
+      tq('ポンしてから<b>ロン</b>。<b>2翻</b>。何点？','2000',['1300','2600','3900'],'鳴いてロンの2翻 → <b>2000</b>'),
+      tq('チーしてから<b>ロン</b>。<b>3翻</b>。何点？','3900',['4000','5200','3200'],'鳴いてロンの3翻は<b>3900</b>（4000ではない）'),
+      ts('ツモ：300・500 → 500・1000 → 1000・2000',`<p>ツモは「<b>子の払い・親の払い</b>」で答えます。</p><div class="tbig">1翻 <b>300・500</b> → 2翻 <b>500・1000</b> → 3翻 <b>1000・2000</b></div><p>1翻は本当は250・500ですが、100点単位に切り上げて300・500。</p><p class="sub">「ゴミ・ゴトウ・センニセン」</p>`),
+      tq('<b>ツモ</b>でアガった。<b>1翻</b>。何点？','300・500',['200・400','400・700','500・1000'],'ツモの1翻 → <b>300・500</b>'),
+      tq('<b>ツモ</b>でアガった。<b>2翻</b>。何点？','500・1000',['300・500','700・1300','1000・2000'],'ツモの2翻 → <b>500・1000</b>'),
+      tq('<b>ツモ</b>でアガった。<b>3翻</b>。何点？','1000・2000',['700・1300','1300・2600','800・1600'],'ツモの3翻 → <b>1000・2000</b>'),
+      ts('見分けの練習',`<p>ここからは、アガリ方を読んで<b>どの表か</b>を選んでから答えます。</p>`),
+      tq('鳴かずにリーチして<b>ロン</b>。<b>2翻</b>。何点？','2600',['2000','500・1000','3900'],'ロン → 鳴いていない → 門前ロン → <b>2600</b>'),
+      tq('チーしてから<b>ツモ</b>。<b>3翻</b>。何点？','1000・2000',['3900','700・1300','1300・2600'],'ツモは<b>鳴いていても同じ表</b> → 1000・2000'),
+      tq('暗槓だけして（ポン・チーなし）<b>ロン</b>。<b>1翻</b>。何点？','1300',['1000','1500','300・500'],'暗槓は<b>鳴きではない</b> → 門前ロン → 1300'),
+      ts('4翻は？',`<p>${k?'4翻は、3つとも<b>満貫（8000）</b>になります。':'切り上げ満貫なしの設定では、4翻の門前ロンは満貫、ツモと鳴いてロンは満貫の少し手前です。'}</p>`+T(['tsumo','menron','nakiron'])));
+  }else if(st===3){
+    const pin=H([tl([1,2,3],'順子'),tl([13,14,15],'順子'),tl([23,24,25],'順子'),tl([20,21,22],'4・5索で3索待ち',1),tl([17,17],'雀頭')]);
+    S.push(ts('平和と七対子は「専用の表」',`<p>この2つの役だけは、ステップ2とは別の点数になります。どちらも<b>鳴かずに</b>作る役です。</p>`+LZ.basics),
+      ts('平和（ピンフ）の4つの条件',`${LZ.chk(['鳴いていない','4つの組が<b>全部順子</b>（3つ並び）','雀頭が<b>役牌でない</b>（白・發・中・場風・自風以外）','<b>両面待ち</b>でアガった'])}${pin}<p>↑4つとも満たしているので平和です。</p>`),
+      tq(`この手は平和？${H([tl([1,2,3],'順子'),tl([13,14,15],'順子'),tl([23,24,25],'順子'),tl([19,20,21],'2・4索で3索待ち',1),tl([17,17],'雀頭')])}`,'平和ではない',['平和'],'2・4索の間を待つ<b>カンチャン待ち</b>なので平和ではない'),
+      tq(`この手は平和？${H([tl([1,2,3],'順子'),tl([13,14,15],'順子'),tl([23,24,25],'順子'),tl([20,21,22],'4・5索で3索待ち',1),tl([33,33],'雀頭')])}`,'平和ではない',['平和'],'雀頭が<b>中（役牌）</b>なので平和ではない'),
+      tq(`この手は平和？${H([tl([2,3,4],'順子'),tl([10,11,12],'順子'),tl([24,25,26],'順子'),tl([5,6,7],'7・8萬で6萬待ち',1),tl([22,22],'雀頭')])}`,'平和',['平和ではない'],'全部順子・雀頭は5索・両面待ち → <b>平和</b>'),
+      ts('平和のロン＝鳴いてロンと同じ',`<p>鳴いていないのに、<b>鳴いてロンの表</b>を使います。作りやすい役なので、わざと安くされています。</p><div class="tbig">1翻 <b>${v('pinR',1)}</b> → 2翻 <b>${v('pinR',2)}</b> → 3翻 <b>${v('pinR',3)}</b></div>`),
+      tq('平和・タンヤオで<b>ロン</b>（2翻）。何点？',v('pinR',2),['2600','1300','3900'],'平和のロンは鳴いてロンと同じ → <b>2000</b>'),
+      tq('リーチ・平和・ドラ1で<b>ロン</b>（3翻）。何点？',v('pinR',3),['5200','2600','6400'],'平和のロン3翻 → <b>3900</b>'),
+      ts('平和のツモ：2翻から',`<p>平和1翻＋門前ツモ1翻で、<b>必ず2翻から</b>始まります。</p><div class="tbig">2翻 <b>${v('pinT',2)}</b> → 3翻 <b>${v('pinT',3)}</b> → 4翻 <b>${v('pinT',4)}</b></div><p><b>4翻でも満貫にならない</b>のが大事なポイント。</p><p class="sub">「ヨンナナ・ナナトザン・イチサンニロク」</p>`),
+      tq('平和・<b>ツモ</b>（2翻）。何点？',v('pinT',2),['500・1000','300・500','700・1300'],'平和ツモの2翻 → <b>400・700</b>'),
+      tq('リーチ・平和・<b>ツモ</b>（3翻）。何点？',v('pinT',3),['1000・2000','400・700','1300・2600'],'平和ツモの3翻 → <b>700・1300</b>'),
+      tq('リーチ・平和・<b>ツモ</b>・ドラ1（4翻）。何点？',v('pinT',4),['2000・4000','1000・2000','1600・3200'],'平和ツモは<b>4翻でも満貫にならない</b> → 1300・2600'),
+      ts('七対子（チートイツ）',`${H([0,4,11,16,19,24,27].map((t,i)=>tl([t,t],i===6?'単騎':'対子',i===6)))}<p>対子を7つそろえた手。これだけで<b>2翻</b>。ロンでもツモでも<b>合計は同じ</b>です。</p><div class="tbig">2翻 <b>${v('chiR',2)}</b> → 3翻 <b>${v('chiR',3)}</b> → 4翻 <b>${v('chiR',4)}</b></div><p>こちらも<b>4翻でも満貫にならない</b>。</p>`),
+      tq('七対子だけで<b>ロン</b>（2翻）。何点？',v('chiR',2),['2000','1300','2600'],'七対子の2翻 → <b>1600</b>'),
+      tq('七対子・ドラ1で<b>ロン</b>（3翻）。何点？',v('chiR',3),['2600','3900','5200'],'1600 → <b>3200</b>（倍）'),
+      tq('七対子・ドラ2で<b>ロン</b>（4翻）。何点？',v('chiR',4),['8000','5200','7700'],'七対子は<b>4翻でも満貫にならない</b> → 6400'),
+      tq('七対子を<b>ツモ</b>（門前ツモがついて3翻）。何点？',v('chiT',3),['1000・2000','700・1300','1600・3200'],'合計3200 → 子800・親1600 → <b>800・1600</b>'),
+      ts('まとめ',T(['pinT','pinR','chiR','chiT'])));
+  }else if(st===4){
+    S.push(ts('親は子の約1.5倍',`<p>親（その局で東の席の人）がアガると、点数は子の<b>およそ1.5倍</b>。子の点数を覚えていれば、置きかえるだけです。</p>`+LZ.basics),
+      ts('親のロン：1.5倍',`<div class="tbig">1000 → <b>1500</b>　2600 → <b>3900</b></div><p>ただし、端数のせいで<b>4つだけ</b>ずれます。</p><div class="lbox">1300 → <b>2000</b>　2000 → <b>2900</b><br>3900 → <b>5800</b>　5200 → <b>7700</b></div>`),
+      tq('親が鳴いて<b>ロン</b>。<b>1翻</b>。何点？',v('nakiron',1,1),['1000','2000','1300'],'子1000 × 1.5 → <b>1500</b>'),
+      tq('親が鳴かずに<b>ロン</b>。<b>2翻</b>。何点？',v('menron',2,1),['2600','4000','5200'],'子2600 × 1.5 → <b>3900</b>'),
+      tq('親が鳴いて<b>ロン</b>。<b>2翻</b>。何点？',v('nakiron',2,1),['3000','2000','3900'],'子2000 → 3000ではなく<b>2900</b>（ずれる所）'),
+      tq('親が鳴かずに<b>ロン</b>。<b>3翻</b>。何点？',v('menron',3,1),['7800','5800','8000'],'子5200 → 7800ではなく<b>7700</b>（ずれる所）'),
+      tq('親が鳴かずに<b>ロン</b>。<b>1翻</b>。何点？',v('menron',1,1),['1900','1500','2600'],'子1300 → <b>2000</b>（ずれる所）'),
+      ts('親のツモ：右側の数を「オール」',`<p>親がツモると、子3人が<b>全員同じ額</b>を払います（「◯◯オール」）。その額は、子がツモったときの<b>右側の数（親が払う額）</b>です。</p>${LZ.flow([`子のツモ<br>500・<b>1000</b>`,`右の数<br><b>1000</b>`,`親のツモ<br><b>1000オール</b>`])}`),
+      tq('親が<b>ツモ</b>。<b>2翻</b>。何点？',v('tsumo',2,1),['500オール','2000オール','700オール'],'子なら500・1000 → 右の<b>1000オール</b>'),
+      tq('親が<b>ツモ</b>。<b>1翻</b>。何点？',v('tsumo',1,1),['300オール','400オール','700オール'],'子なら300・500 → 右の<b>500オール</b>'),
+      tq('親がリーチ・平和・<b>ツモ</b>（3翻）。何点？',v('pinT',3,1),['700オール','2600オール','1000オール'],'子なら700・1300 → 右の<b>1300オール</b>'),
+      ts('満貫以上も1.5倍',T(['mR','mT'],1)),
+      tq('親が<b>満貫</b>でロン。何点？',v('mR',5,1),['8000','16000','18000'],'8000 × 1.5 → <b>12000</b>'),
+      tq('親が<b>跳満</b>でツモ。何点？',v('mT',6,1),['4000オール','3000オール','8000オール'],'子なら3000・6000 → 右の<b>6000オール</b>'),
+      ts('まとめ',T(['tsumo','menron','nakiron'],1)));
+  }else if(st===5){
+    const m=k?3:4;
+    S.push(ts('符が多いと、点数が上がる',`<p>手の形には<b>符（ふ）</b>という小さなおまけ点がつきます。符がたくさんたまると、点数が上がります。どれだけ上がるかを「<b>段階</b>」で数えます。</p><p>考えるのは、<b>平和・七対子以外</b>で<b>${m}翻以下</b>の手だけです。</p>`+LZ.basics),
+      ts('点数のはしご',`<p>ロンの点数は、この<b>1本のはしご</b>に全部並んでいます。小さい字は「その場所から始まるアガリ」です。</p>${sbLadderHTML(false,false,{marks:sbLadderMarks(['nakiron','menron','chiR'])})}<div class="lbox"><b>1段階上がる ＝ はしごを1つ右へ</b></div>`),
+      tq(`鳴いてロン・2翻（<b>2000</b>）が<b>1段階</b>上がると？${sbLadderHTML(false,false,{from:3})}`,'2600',['2900','3200','3900'],'2000の1つ右 → <b>2600</b>'),
+      tq('鳴いてロン・1翻（1000）が<b>1段階</b>上がると？','1300',['1500','2000','1600'],'1000の1つ右 → <b>1300</b>'),
+      tq('門前ロン・2翻（2600）が<b>1段階</b>上がると？','3200',['3900','2900','5200'],'2600の1つ右 → <b>3200</b>'),
+      tq('鳴いてロン・2翻（2000）が<b>2段階</b>上がると？','3200',['2600','3900','4000'],'2000から2つ右 → 2600 → <b>3200</b>'),
+      ts('ツモにも、はしごがある',`${sbLadderHTML(false,true,{marks:sbLadderMarks(['tsumo','pinT','chiT'])})}<p>使い方はロンと同じ。1段階で1つ右へ。</p>`),
+      tq('ツモ・2翻（500・1000）が<b>1段階</b>上がると？','700・1300',['1000・2000','800・1600','600・1200'],'500・1000の1つ右 → <b>700・1300</b>'),
+      ts('何符で何段階？',`<div class="tbig">12符〜 → <b>1段階</b><br>22符〜 → <b>2段階</b><br>32符〜 → <b>3段階</b></div><p>11符までは0段階（そのまま）。符のつくもの：</p>
+        <table class="lt"><tr><th></th><th>2〜8</th><th>1・9・字牌</th></tr><tr><td>ポンした刻子</td><td class="num">2</td><td class="num">4</td></tr><tr><td>暗刻</td><td class="num">4</td><td class="num">8</td></tr><tr><td>明槓</td><td class="num">8</td><td class="num">16</td></tr><tr><td>暗槓</td><td class="num">16</td><td class="num">32</td></tr></table>
+        <p>そのほか、カンチャン・ペンチャン・単騎待ち<b>2符</b>、役牌の雀頭<b>2符</b>、ツモ<b>2符</b>。</p>`),
+      tq('1・9・字牌の<b>暗刻</b>は何符？','8符',['2符','4符','16符'],'基本2符 → 1・9・字牌で×2 → 暗刻で×2 → <b>8符</b>'),
+      tq('2〜8の牌を<b>ポン</b>した刻子は何符？','2符',['0符','4符','8符'],'基本の<b>2符</b>のまま'),
+      tq(`ツモでアガった。何段階？${H([tl([33,33,33],'中の暗刻'),tl([2,3,4],'順子'),tl([14,15,16],'順子'),tl([19,20,21],'カンチャン',1),tl([13,13],'雀頭')])}`,'1段階',['0段階','2段階','3段階'],'中の暗刻8＋カンチャン2＋ツモ2 ＝ 12符 → <b>1段階</b>'),
+      tq(`ロンでアガった。何段階？${H([LZ.raw(LZ_PON(13),'5筒ポン'),tl([1,2,3],'順子'),tl([23,24,25],'順子'),tl([21,22,23],'両面',1),tl([7,7],'雀頭')])}`,'0段階',['1段階','2段階','3段階'],'5筒ポン2符だけ → 12符に届かず <b>0段階</b>'),
+      tq(`ロンでアガった。何段階？${H([LZ.raw(LZ_ANKAN(22),'5索の暗槓'),tl([9,9,9],'1筒の暗刻'),tl([1,2,3],'順子'),tl([14,15,16],'両面',1),tl([5,5],'雀頭')])}`,'2段階',['0段階','1段階','3段階'],'暗槓16＋1筒暗刻8 ＝ 24符 → <b>2段階</b>'),
+      tq(`9索と中のシャボ待ちで、9索を<b>ロン</b>。何段階？${H([tl([26,26,26],'9索（ロンで完成）',1),tl([13,13,13],'5筒の暗刻'),tl([1,2,3],'順子'),tl([20,21,22],'順子'),tl([33,33],'中の雀頭')])}`,'0段階',['1段階','2段階','3段階'],'ロンで完成した刻子は<b>ポンと同じ</b>（9索4符）＋5筒暗刻4＋役牌の雀頭2 ＝ 10符 → <b>0段階</b>'),
+      ts('まとめ',`<ul class="lul"><li>符を足して、12符で1段階・22符で2段階・32符で3段階</li><li>1段階 ＝ はしごを1つ右へ</li><li>平和・七対子と、${m+1}翻以上は考えなくてよい</li></ul>${sbLadderHTML(false,false,{marks:sbLadderMarks(['nakiron','menron','chiR'])})}`));
+  }else{
+    S.push(ts('4つの手順',`<ol class="lsteps"><li><b>アガリ方</b>：七対子？ 平和？ それ以外はツモ／門前ロン／鳴いてロン</li><li><b>翻数</b>：役とドラを足す</li><li><b>段階</b>：平和・七対子・${sbMaxStepHan()+1}翻以上は「不要」。それ以外は符を数える</li><li><b>点数</b>：はしごや表で読む。親なら置きかえる</li></ol><p>ここからは、実際の手牌で練習します。</p>`+LZ.basics));
+    const E1=tutCtx([1,2,3,13,14,15,26,26,26,22,22],{melds:[{k:'pon',t:31}],win:2});
+    const E2=tutCtx([1,2,3,13,14,15,20,21,22,23,24,25,17,17],{win:20,tsumo:true,riichi:true,jikaze:29,dora:1});
+    const E3=tutCtx([0,0,4,4,11,11,16,16,19,19,24,24,27,27],{win:27,jikaze:27,dealer:true,dora:1});
+    const E4=tutCtx([33,33,33,1,2,3,14,15,16,19,20,21,13,13],{win:20,riichi:true});
+    const E5=tutCtx([1,2,3,23,24,25,21,22,23,7,7],{melds:[{k:'pon',t:13}],win:21,tsumo:true,jikaze:27,dealer:true});
+    S.push(...tutTotal(E1,true,'例題1：子がロン（3萬でアガリ）'));
+    S.push(...tutTotal(E2,true,'例題2：子がツモ（3索でアガリ）'));
+    S.push(ts('ここからは一気に',`<p>4つの手順を頭の中で進めて、<b>点数だけ</b>を答えてみましょう。答えのあとに手順が出ます。</p>`));
+    S.push(...tutTotal(E3,false,'例題3：親がロン（東でアガリ）'));
+    S.push(...tutTotal(E4,false,'例題4：子がロン（3索でアガリ）'));
+    S.push(...tutTotal(E5,false,'例題5：親がツモ（4索でアガリ）'));
+  }
+  return S;
+}
+function openTutorial(st){TU={st,S:sbTutSlides(st),i:0,res:{}};drawTut();}
+function drawTut(){
+  const {st,S,i}=TU,s=S[i],n=S.length,last=i===n-1;
+  const qs=S.map((x,j)=>x.quiz?j:-1).filter(j=>j>=0),qn=qs.indexOf(i)+1;
+  const ok=qs.filter(j=>TU.res[j]&&TU.res[j]===S[j].ans).length;
+  let body;
+  if(s.quiz){
+    const sel=TU.res[i];
+    body=`<p class="tq-num">確認 ${qn} / ${qs.length}</p><div class="tq">${s.q}</div>
+      <div class="pad c2 tpad">${s.opts.map(o=>{let c='';if(sel){if(o===s.ans)c='ok';else if(o===sel)c='ng';}return `<button class="key ${c}" type="button" data-tv="${o}" ${sel?'disabled':''}>${o}</button>`;}).join('')}</div>
+      ${sel?`<div class="twhy ${sel===s.ans?'o':'x'}"><b>${sel===s.ans?'○ 正解':'× 正解は「'+s.ans+'」'}</b><p>${s.why}</p></div>`:''}`;
+  }else body=`<h3 class="th">${s.h}</h3><div class="tb">${s.b}</div>`;
+  const need=s.quiz&&!TU.res[i];
+  panel.innerHTML=`<div class="tut"><div class="tbar"><span style="width:${(i+1)/n*100}%"></span></div>
+    <div class="thead"><span>ステップ${st}：${SB_STAGES[st].n}</span><span>${i+1} / ${n}</span></div>
+    <div class="sbh lesson tbody">${body}</div>
+    ${last?`<div class="tend"><p>確認クイズ <b>${ok} / ${qs.length}</b> 問正解</p><button class="primary" type="button" id="tStart">練習を始める</button><button class="ghost" type="button" id="tRead">まとめを読む（読み物）</button><button class="ghost" type="button" id="tAgain">もう一度はじめから</button></div>`
+      :`<div class="tnav"><button class="ghost" type="button" id="tPrev" ${i?'':'disabled'}>← 戻る</button><button class="primary" type="button" id="tNext" ${need?'disabled':''}>${need?'答えを選んでください':'次へ →'}</button></div>`}
+    <button class="tclose" type="button" id="tClose">閉じる</button></div>`;
+  sheet.hidden=false;panel.scrollTop=0;
+  panel.querySelectorAll('[data-tv]').forEach(b=>b.onclick=()=>{TU.res[i]=b.dataset.tv;drawTut();});
+  const on=(id,f)=>{const e=panel.querySelector('#'+id);if(e)e.onclick=f;};
+  on('tPrev',()=>{TU.i--;drawTut();});on('tNext',()=>{TU.i++;drawTut();});
+  on('tClose',closeSheet);on('tStart',closeSheet);on('tRead',()=>openLesson(st));on('tAgain',()=>openTutorial(st));
+  bindBasics(()=>drawTut());
+}
 
 // ===== 待ち当て =====
 function newWait(){const q=genWaitQ(levels.wait);Q={type:'wait',...q,sel:new Set(),done:false};drawWait();}
