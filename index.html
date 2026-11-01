@@ -519,6 +519,20 @@ button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
 .lvinfo b{flex:none;width:3em}
 .pad.c3{grid-template-columns:repeat(3,1fr)}
 .pad.c7{grid-template-columns:repeat(7,1fr);gap:5px}
+.pad.c6{grid-template-columns:repeat(6,1fr);gap:5px}
+.pad.c6 .key{min-height:46px;font-size:17px;padding:0}
+.pad.c6 .key small{font-size:10px;margin-left:1px}
+.menutg{flex:1;min-width:0;display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 12px;min-height:34px;font-size:13px;text-align:left}
+.menutg b{flex:none;font-size:13px}
+.menutg .sbname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.menutg .sbname small{margin-left:6px;font-weight:700}
+.menutg .chev{flex:none;font-size:10px;color:var(--muted)}
+.menutg[aria-expanded="true"]{border-color:var(--sel)}
+.sbbtns{flex:none}
+.menubody{display:flex;flex-direction:column;gap:8px;padding:8px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+.mlab{font-size:12px;font-weight:700;color:var(--muted)}
+.hintrow{display:flex;align-items:center;gap:8px;min-height:30px}
+.backstep{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 12px;font-size:13px;font-weight:700;min-height:30px}
 .pad.c7 .key{min-height:44px;font-size:17px;padding:0}
 .felt.sbtot{padding:8px 3px 10px;gap:6px}
 .ykset{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;font-weight:700;color:var(--muted)}
@@ -527,7 +541,7 @@ button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
 .bq-yk span{font-size:17px;font-weight:700;padding:4px 10px;border-radius:8px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22)}
 .bq-tag{display:block;font-size:11px;font-weight:700;opacity:.85;text-align:center}
 /* 渋川式 */
-.crs{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.crs{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
 .crs .seg button{min-height:30px;padding:4px 12px}
 .sbname{font-size:12px;font-weight:700;color:var(--muted)}
 .stg{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
@@ -1526,11 +1540,11 @@ function drawScore(){
   }).join('');
   let pad='';
   if(Q.step==='h'){
-    pad=`<div class="pad c4">${[1,2,3,4,5,6,7,8,9,10,11,12].map(n=>{
+    pad=`<div class="pad c6">${[1,2,3,4,5,6,7,8,9,10,11,12].map(n=>{
       let c='';if(d){if(n===r.han)c='ok';else if(n===Q.h)c='ng';}
       return `<button class="key ${c}" type="button" data-v="${n}" aria-pressed="${Q.h===n}" ${d?'disabled':''}>${n}<small>翻</small></button>`;}).join('')}</div>`;
   }else if(Q.step==='f'){
-    pad=`<div class="pad c4">${[20,25,30,40,50,60,70,80,90,100,110].map(n=>{
+    pad=`<div class="pad c6">${[20,25,30,40,50,60,70,80,90,100,110].map(n=>{
       let c='';if(d&&r.han<5){if(n===r.fu)c='ok';else if(n===Q.f)c='ng';}
       return `<button class="key ${c}" type="button" data-v="${n}" aria-pressed="${Q.f===n}" ${d?'disabled':''}>${n}<small>符</small></button>`;}).join('')}</div>`;
   }else{
@@ -1548,7 +1562,7 @@ function drawScore(){
     </div>
 <!--CTRL-->
     <div class="steps" style="grid-template-columns:repeat(3,1fr)">${stepH}</div>
-    <p class="hint">${Q.step==='h'?'役とドラを合計した翻数':Q.step==='f'?'符を計算して10符単位に切り上げた値':payHint}${lv===1?' ／ 初級は符を表示しています':''}</p>
+    <div class="hintrow">${backBtn(!d&&Q.step!=='h')}<p class="hint">${Q.step==='h'?'役とドラを合計した翻数':Q.step==='f'?'符を計算して10符単位に切り上げた値':payHint}${lv===1?' ／ 初級は符を表示しています':''}</p></div>
     ${pad}`);
   bindCourse();
   root.querySelectorAll('.step:not([disabled])').forEach(b=>b.onclick=()=>{Q.step=b.dataset.step;drawScore();});
@@ -1556,10 +1570,10 @@ function drawScore(){
     root.querySelectorAll('.key').forEach(b=>b.onclick=()=>{
       const v=b.dataset.v;
       if(Q.step==='h')Q.h=+v;else if(Q.step==='f')Q.f=+v;else Q.p=v;
-      const order=['h','f','p'];const empty=order.find(s=>(s==='h'?Q.h:s==='f'?Q.f:Q.p)==null);
-      if(empty)Q.step=empty;
+      const O=lv===1?['h','p']:['h','f','p'],nx=O[O.indexOf(Q.step)+1];if(nx)Q.step=nx;
       drawScore();
     });
+    root.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{const O=lv===1?['h','p']:['h','f','p'],i=O.indexOf(Q.step);if(i>0)Q.step=O[i-1];drawScore();});
     const ready=Q.h!=null&&Q.f!=null&&Q.p!=null;
     setGo('答え合わせ',ready,checkScore);
   }else setGo('次の問題',true,next);
@@ -1688,17 +1702,27 @@ function sbProgress(ok){
   saveSb();return msg;
 }
 function sbWeight(id,ok,slow){const w=shibu.w[id]||1;shibu.w[id]=!ok?Math.min(10,w+3):slow?w+.5:Math.max(1,w*.6);}
+// 上部メニューは折りたたみ式。たたんだ時は今のコースとステップだけを1行で見せる
+let menuOpen=!!LS.get('menuOpen',false);
 function courseSeg(){
-  const a=shibu.rec[shibu.stage]||[];
-  return `<div class="crs"><div class="seg" role="group" aria-label="コース"><button type="button" data-course="normal" aria-pressed="${course==='normal'}">通常</button><button type="button" data-course="shibu" aria-pressed="${course==='shibu'}">渋川式</button></div>`
-    +(course==='shibu'?`<span class="sbname">${shibu.stage===7?`ミックス（この問題：ステップ${sbCur}）`:`ステップ${shibu.stage}：${SB_STAGES[shibu.stage].n}`}${a.length?`（直近 ${a.reduce((x,y)=>x+y,0)}/${a.length}）`:''}</span><span class="sbbtns"><button type="button" class="sbhelp em" data-lesson>📖 解説</button><button type="button" class="sbhelp" data-ref>📋 早見表</button><button type="button" class="sbhelp" data-sbhelp aria-label="渋川式とは">？</button></span>`:'')+'</div>'
-    +(course==='shibu'?`<div class="stg">${[1,2,3,4,5,6,7].map(i=>`<button type="button" class="${i===7?'mx':''}" data-stage="${i}" aria-pressed="${shibu.stage===i}">${i===7?'🔀':shibu.cl[i]?'✓':i}<small>${SB_STAGES[i].s}</small></button>`).join('')}</div>`
+  const a=shibu.rec[shibu.stage]||[],sb=course==='shibu';
+  const label=sb?(shibu.stage===7?`ミックス（ステップ${sbCur}）`:`${shibu.stage}：${SB_STAGES[shibu.stage].n}`)+(a.length?`<small>直近${a.reduce((x,y)=>x+y,0)}/${a.length}</small>`:''):'通常コース';
+  const bar=`<div class="crs"><button type="button" class="menutg" data-menu aria-expanded="${menuOpen}"><b>${sb?'渋川式':'通常'}</b><span class="sbname">${label}</span><span class="chev" aria-hidden="true">${menuOpen?'▲':'▼'}</span></button>`
+    +(sb?`<span class="sbbtns"><button type="button" class="sbhelp em" data-lesson>📖 解説</button><button type="button" class="sbhelp" data-ref aria-label="早見表">📋</button><button type="button" class="sbhelp" data-sbhelp aria-label="渋川式とは">？</button></span>`:'')+'</div>';
+  if(!menuOpen)return bar;
+  return bar+`<div class="menubody"><div class="crs"><span class="mlab">コース</span><div class="seg" role="group" aria-label="コース"><button type="button" data-course="normal" aria-pressed="${course==='normal'}">通常</button><button type="button" data-course="shibu" aria-pressed="${sb}">渋川式</button></div></div>`
+    +(sb?`<div class="stg">${[1,2,3,4,5,6,7].map(i=>`<button type="button" class="${i===7?'mx':''}" data-stage="${i}" aria-pressed="${shibu.stage===i}">${i===7?'🔀':shibu.cl[i]?'✓':i}<small>${SB_STAGES[i].s}</small></button>`).join('')}</div>`
       +((shibu.stage<=4||(shibu.stage===7&&shibu.mix.some(i=>i<=4)))?`<div class="ykset"><span>翻の出し方${shibu.stage===7?'（ステップ1〜4）':''}</span><div class="seg" role="group" aria-label="翻の出し方">${[['han','翻数'],['yaku','役名'],['mix','混ぜる']].map(([v,l])=>`<button type="button" data-disp="${v}" aria-pressed="${(shibu.disp||'han')===v}">${l}</button>`).join('')}</div></div>`:'')
-      +(shibu.stage===7?`<div class="mixsel"><span>出題</span>${[1,2,3,4,5,6].map(i=>`<button type="button" data-mix="${i}" aria-pressed="${shibu.mix.includes(i)}" aria-label="ステップ${i} ${SB_STAGES[i].n}">${i}<small>${SB_STAGES[i].s}</small></button>`).join('')}</div>`:''):'');
+      +(shibu.stage===7?`<div class="mixsel"><span>出題</span>${[1,2,3,4,5,6].map(i=>`<button type="button" data-mix="${i}" aria-pressed="${shibu.mix.includes(i)}" aria-label="ステップ${i} ${SB_STAGES[i].n}">${i}<small>${SB_STAGES[i].s}</small></button>`).join('')}</div>`:''):'')
+    +'</div>';
 }
+function setMenu(o){menuOpen=o;LS.set('menuOpen',o);}
+// メニューの開閉だけなら、問題は作り直さずに今の画面を描き直す
+function redrawQ(){if(!Q)return next();if(Q.sb==='card')sbDrawCard();else if(Q.sb==='steps')sbDrawSteps();else if(Q.sb==='total')sbDrawTotal();else if(mode==='score')drawScore();else next();}
 function bindCourse(){
-  root.querySelectorAll('[data-course]').forEach(b=>b.onclick=()=>{if(course===b.dataset.course)return;course=b.dataset.course;LS.set('course',course);next();});
-  root.querySelectorAll('[data-stage]').forEach(b=>b.onclick=()=>{shibu.stage=+b.dataset.stage;saveSb();next();});
+  root.querySelectorAll('[data-menu]').forEach(b=>b.onclick=()=>{setMenu(!menuOpen);redrawQ();});
+  root.querySelectorAll('[data-course]').forEach(b=>b.onclick=()=>{if(course===b.dataset.course)return;course=b.dataset.course;LS.set('course',course);if(course==='normal')setMenu(false);next();});
+  root.querySelectorAll('[data-stage]').forEach(b=>b.onclick=()=>{shibu.stage=+b.dataset.stage;saveSb();if(shibu.stage!==7)setMenu(false);next();});
   root.querySelectorAll('[data-disp]').forEach(b=>b.onclick=()=>{if((shibu.disp||'han')===b.dataset.disp)return;shibu.disp=b.dataset.disp;saveSb();next();});
   root.querySelectorAll('[data-lesson]').forEach(b=>b.onclick=()=>openTutorial(shibu.stage===7?sbCur:shibu.stage));
   root.querySelectorAll('[data-ref]').forEach(b=>b.onclick=openRef);
@@ -1892,6 +1916,8 @@ function sbDrawSteps(){
     setGo('答えをタップ',false,null);}
   else setGo('次の問題',true,next);
 }
+// 複数の答えを順に入れる問題の「戻る」ボタン
+const backBtn=on=>on?'<button type="button" class="backstep" data-back>← 戻る</button>':'';
 // 総合：①アガリ方 ②翻 ③段階 ④点数 を順に答える
 const SB_AG=[['tsumo','ツモ'],['menron','門前ロン'],['nakiron','鳴いてロン'],['pin','平和'],['chi','七対子']];
 function sbNewTotal(){
@@ -1928,7 +1954,7 @@ function sbDrawTotal(){
       ${handScoreHTML(ctx)}
     </div>
     <div class="steps" style="grid-template-columns:repeat(4,1fr)">${stepH}</div>
-    <p class="hint">${hint}</p>
+    <div class="hintrow">${backBtn(!d&&Q.step!=='a')}<p class="hint">${hint}</p></div>
     ${pad}`);
   bindCourse();
   root.querySelectorAll('.step').forEach(b=>b.onclick=()=>{Q.step=b.dataset.step;sbDrawTotal();});
@@ -1936,9 +1962,10 @@ function sbDrawTotal(){
     root.querySelectorAll('.pad .key').forEach(b=>b.onclick=()=>{
       const raw=b.dataset.v,v=Q.step==='h'?+raw:Q.step==='s'?(raw==='x'?'x':+raw):raw;
       Q[Q.step]=v;
-      const nx=['a','h','s','pt'].find(s=>Q[s]==null);if(nx)Q.step=nx;
+      const O=['a','h','s','pt'],nx=O[O.indexOf(Q.step)+1];if(nx)Q.step=nx;
       sbDrawTotal();
     });
+    root.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{const O=['a','h','s','pt'],i=O.indexOf(Q.step);if(i>0)Q.step=O[i-1];sbDrawTotal();});
     setGo('答え合わせ',Q.a!=null&&Q.h!=null&&Q.s!=null&&Q.pt!=null,sbCheckTotal);
   }else setGo('次の問題',true,next);
 }
