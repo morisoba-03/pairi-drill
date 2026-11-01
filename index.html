@@ -518,6 +518,14 @@ button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
 .lvinfo div{display:flex;gap:8px}
 .lvinfo b{flex:none;width:3em}
 .pad.c3{grid-template-columns:repeat(3,1fr)}
+.pad.c7{grid-template-columns:repeat(7,1fr);gap:5px}
+.pad.c7 .key{min-height:44px;font-size:17px;padding:0}
+.felt.sbtot{padding:8px 3px 10px;gap:6px}
+.ykset{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;font-weight:700;color:var(--muted)}
+.ykset .seg button{min-height:30px;padding:4px 12px}
+.bq-yk{flex-basis:100%;display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.bq-yk span{font-size:17px;font-weight:700;padding:4px 10px;border-radius:8px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22)}
+.bq-tag{display:block;font-size:11px;font-weight:700;opacity:.85;text-align:center}
 /* 渋川式 */
 .crs{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .crs .seg button{min-height:30px;padding:4px 12px}
@@ -1685,11 +1693,13 @@ function courseSeg(){
   return `<div class="crs"><div class="seg" role="group" aria-label="コース"><button type="button" data-course="normal" aria-pressed="${course==='normal'}">通常</button><button type="button" data-course="shibu" aria-pressed="${course==='shibu'}">渋川式</button></div>`
     +(course==='shibu'?`<span class="sbname">${shibu.stage===7?`ミックス（この問題：ステップ${sbCur}）`:`ステップ${shibu.stage}：${SB_STAGES[shibu.stage].n}`}${a.length?`（直近 ${a.reduce((x,y)=>x+y,0)}/${a.length}）`:''}</span><span class="sbbtns"><button type="button" class="sbhelp em" data-lesson>📖 解説</button><button type="button" class="sbhelp" data-ref>📋 早見表</button><button type="button" class="sbhelp" data-sbhelp aria-label="渋川式とは">？</button></span>`:'')+'</div>'
     +(course==='shibu'?`<div class="stg">${[1,2,3,4,5,6,7].map(i=>`<button type="button" class="${i===7?'mx':''}" data-stage="${i}" aria-pressed="${shibu.stage===i}">${i===7?'🔀':shibu.cl[i]?'✓':i}<small>${SB_STAGES[i].s}</small></button>`).join('')}</div>`
+      +((shibu.stage<=4||(shibu.stage===7&&shibu.mix.some(i=>i<=4)))?`<div class="ykset"><span>翻の出し方${shibu.stage===7?'（ステップ1〜4）':''}</span><div class="seg" role="group" aria-label="翻の出し方">${[['han','翻数'],['yaku','役名'],['mix','混ぜる']].map(([v,l])=>`<button type="button" data-disp="${v}" aria-pressed="${(shibu.disp||'han')===v}">${l}</button>`).join('')}</div></div>`:'')
       +(shibu.stage===7?`<div class="mixsel"><span>出題</span>${[1,2,3,4,5,6].map(i=>`<button type="button" data-mix="${i}" aria-pressed="${shibu.mix.includes(i)}" aria-label="ステップ${i} ${SB_STAGES[i].n}">${i}<small>${SB_STAGES[i].s}</small></button>`).join('')}</div>`:''):'');
 }
 function bindCourse(){
   root.querySelectorAll('[data-course]').forEach(b=>b.onclick=()=>{if(course===b.dataset.course)return;course=b.dataset.course;LS.set('course',course);next();});
   root.querySelectorAll('[data-stage]').forEach(b=>b.onclick=()=>{shibu.stage=+b.dataset.stage;saveSb();next();});
+  root.querySelectorAll('[data-disp]').forEach(b=>b.onclick=()=>{if((shibu.disp||'han')===b.dataset.disp)return;shibu.disp=b.dataset.disp;saveSb();next();});
   root.querySelectorAll('[data-lesson]').forEach(b=>b.onclick=()=>openTutorial(shibu.stage===7?sbCur:shibu.stage));
   root.querySelectorAll('[data-ref]').forEach(b=>b.onclick=openRef);
   root.querySelectorAll('[data-mix]').forEach(b=>b.onclick=()=>{
@@ -1724,14 +1734,74 @@ function sbDealerTip(p,h,ts){
   return ts?`親のツモは、子がツモったときに<b>親が払う額</b>の「オール」（子 ${k} → 親 ${o}）`:`親のロンは子の約1.5倍（子 ${k} → 親 ${o}）。100点単位の切り上げで少しずれる所もある`;
 }
 
+// ---- 役名で出題：翻数のかわりに、合計がその翻になる役の組み合わせを作る ----
+// c：門前の翻 o：鳴きの翻（0は鳴くと成立しない） w：出やすさ
+const SB_YK={
+  riichi:{n:'立直',c:1,o:0,w:6},ippatsu:{n:'一発',c:1,o:0,w:1},tanyao:{n:'断幺九',c:1,o:1,w:4},
+  haku:{n:'役牌 白',c:1,o:1,w:1.3},hatsu:{n:'役牌 發',c:1,o:1,w:1.3},chun:{n:'役牌 中',c:1,o:1,w:1.3},
+  iipei:{n:'一盃口',c:1,o:0,w:1.2},sanshoku:{n:'三色同順',c:2,o:1,w:1.2},ittsu:{n:'一気通貫',c:2,o:1,w:1.2},
+  chanta:{n:'混全帯幺九',c:2,o:1,w:.6},toitoi:{n:'対々和',c:0,o:2,w:1.5},sanankou:{n:'三暗刻',c:2,o:2,w:.5},
+  honitsu:{n:'混一色',c:3,o:2,w:1.5},chinitsu:{n:'清一色',c:6,o:5,w:.5}};
+const SB_YK_NG=[['tanyao','haku'],['tanyao','hatsu'],['tanyao','chun'],['tanyao','chanta'],['tanyao','ittsu'],['tanyao','honitsu'],
+  ['sanshoku','ittsu'],['sanshoku','honitsu'],['sanshoku','chinitsu'],['sanshoku','toitoi'],['ittsu','toitoi'],['ittsu','chanta'],
+  ['iipei','toitoi'],['chanta','toitoi'],['honitsu','chinitsu'],['chinitsu','haku'],['chinitsu','hatsu'],['chinitsu','chun'],['chinitsu','chanta']];
+const SB_YKM={ron:['国士無双','大三元','字一色','小四喜'],tsumo:['四暗刻','国士無双','大三元','字一色']};
+function sbYakuList(c){
+  // アガリ方から手の種類を決める（ツモ・満貫以上は門前／鳴きの両方があり得る）
+  const P=SB_PAT[c.p],ts=!!P.ts;let kind;
+  if(c.p==='pinT'||c.p==='pinR')kind='pin';else if(c.p==='chiT'||c.p==='chiR')kind='chi';
+  else if(c.p==='menron')kind='men';else if(c.p==='nakiron')kind='open';
+  else if(c.p==='tsumo')kind=Math.random()<0.6?'men':'open';
+  else kind=pick(['men','men','open','pin','chi']);
+  if(c.h>=13&&Math.random()<0.6)return{ys:[{n:pick(SB_YKM[ts?'tsumo':'ron']),h:13,ym:1}],open:false};
+  const open=kind==='open',base=[];
+  if(kind==='pin')base.push({n:'平和',h:1});
+  if(kind==='chi')base.push({n:'七対子',h:2});
+  if(!open&&ts)base.push({n:'門前清自摸和',h:1});
+  const allow={pin:['riichi','ippatsu','tanyao','iipei','sanshoku','ittsu','chanta','honitsu','chinitsu'],chi:['riichi','ippatsu','tanyao','honitsu','chinitsu'],
+    men:['riichi','ippatsu','tanyao','haku','hatsu','chun','iipei','sanshoku','ittsu','chanta','sanankou','honitsu','chinitsu'],
+    open:['tanyao','haku','hatsu','chun','sanshoku','ittsu','chanta','toitoi','sanankou','honitsu','chinitsu']}[kind]
+    .filter(k=>!(open&&k==='tanyao'&&!rules.kuitan));
+  const hanOf=k=>open?SB_YK[k].o:SB_YK[k].c;
+  const R0=c.h-base.reduce((a,y)=>a+y.h,0);
+  for(let t=0;t<400;t++){
+    const got=[];let R=R0;
+    // 門前ロン・鳴きの手はドラだけではアガれないので、役を最低1つ入れる
+    const needOne=!base.length;
+    while(true){
+      const cand=allow.filter(k=>!got.includes(k)&&hanOf(k)>0&&hanOf(k)<=R&&(k!=='ippatsu'||got.includes('riichi'))
+        &&!SB_YK_NG.some(([a,b])=>(a===k&&got.includes(b))||(b===k&&got.includes(a)))
+        &&!(['haku','hatsu','chun'].includes(k)&&got.filter(x=>['haku','hatsu','chun'].includes(x)).length>=2));
+      if(!cand.length)break;
+      if((got.length||!needOne)&&Math.random()<(R<=2?0.45:0.25))break;
+      let r=Math.random()*cand.reduce((a,k)=>a+SB_YK[k].w,0),k=cand[0];
+      for(const x of cand){r-=SB_YK[x].w;if(r<=0){k=x;break;}}
+      got.push(k);R-=hanOf(k);
+    }
+    if(needOne&&!got.length)continue;
+    if(R>(t<300?4:13))continue;
+    const ys=base.concat(got.map(k=>({n:SB_YK[k].n,h:hanOf(k)})));
+    if(R>0){
+      // 立直していれば、ドラを裏ドラと分けて見せることもある
+      if(got.includes('riichi')&&R>=2&&Math.random()<0.5){const u=1+ri(R-1);ys.push({n:'ドラ'+(R-u),h:R-u,dora:1},{n:'裏ドラ'+u,h:u,dora:1});}
+      else ys.push({n:'ドラ'+R,h:R,dora:1});
+    }
+    return{ys,open};
+  }
+  return null;
+}
+const sbYkHTML=y=>`<div class="bq-yk">${y.ys.map(x=>`<span>${x.n}</span>`).join('')}</div>`;
+const sbYkSum=y=>y.ys.map(x=>x.dora?x.n:`${x.n} ${x.ym?'役満':x.h}`).join('＋');
+function sbDispUse(){const m=shibu.disp||'han';return m==='yaku'||(m==='mix'&&Math.random()<0.5);}
+
 // ---- 段階1〜4：表の暗記カード ----
-function sbNewCard(){const card=sbPickCard(sbCur);const o=sbCardOpts(card);Q={type:'score',sb:'card',card,ans:o.ans,opts:o.opts,sel:null,done:false,t0:Date.now()};sbDrawCard();}
+function sbNewCard(){const card=sbPickCard(sbCur);const o=sbCardOpts(card);const yk=sbDispUse()?sbYakuList(card):null;Q={type:'score',sb:'card',card,yk,ans:o.ans,opts:o.opts,sel:null,done:false,t0:Date.now()};sbDrawCard();}
 function sbDrawCard(){
   const c=Q.card,P=SB_PAT[c.p],d=Q.done;
   const hint=P.ts?(c.d?'親のツモは「◯オール」で答えます':'子のツモは「子の払い・親の払い」で答えます'):'';
   render(`${courseSeg()}
     <div class="qhead"><p class="prompt">何点？</p>${stHTML()}</div>
-    <div class="felt"><div class="bigq"><span class="bq-who ${c.d?'em':''}">${c.d?'親':'子'}</span><span class="bq-pat">${P.n}</span><span class="bq-han">${c.h}<small>翻</small></span></div>${hint?`<p class="rnote">${hint}</p>`:''}</div>
+    <div class="felt"><div class="bigq"><span class="bq-who ${c.d?'em':''}">${c.d?'親':'子'}</span><span class="bq-pat">${P.n}${Q.yk&&Q.yk.open&&c.p!=='nakiron'?'<small class="bq-tag">鳴きあり</small>':''}</span>${Q.yk?sbYkHTML(Q.yk):`<span class="bq-han">${c.h}<small>翻</small></span>`}</div>${Q.yk&&!d?'<p class="rnote">役の翻を合計してから、表を引きます</p>':''}${hint?`<p class="rnote">${hint}</p>`:''}</div>
 <!--CTRL-->
     <p class="hint">${d?'表のどこを見ればよいかは解説で確認できます':'答えをタップすると、すぐ答え合わせします'}</p>
     <div class="pad c2">${Q.opts.map(o=>{let k='';if(d){if(o===Q.ans)k='ok';else if(o===Q.sel)k='ng';}
@@ -1745,7 +1815,7 @@ function sbCheckCard(){
   sbWeight(c.id,Q.ok,Date.now()-Q.t0>7000);record(Q.ok);const msg=sbProgress(Q.ok);sbDrawCard();
   const P=SB_PAT[c.p];
   openEx(Q.ok,`${c.d?'親':'子'}・${P.n}・${c.h}翻 → <b>${Q.ans}</b>${msg}`,
-    `<div><h3>どの表を見るか</h3><p>${sbTip(c.p,c.d)}</p>${c.d?`<p class="sub">${sbDealerTip(c.p,c.h,P.ts)}</p>`:''}</div>
+    `${Q.yk?`<div><h3>翻の数え方${Q.yk.open?'（鳴きあり：喰い下がりに注意）':''}</h3><p>${sbYkSum(Q.yk)} ＝ <b>${Q.yk.ys.some(x=>x.ym)?'役満':c.h+'翻'}</b></p></div>`:''}<div><h3>どの表を見るか</h3><p>${sbTip(c.p,c.d)}</p>${c.d?`<p class="sub">${sbDealerTip(c.p,c.h,P.ts)}</p>`:''}</div>
      <div><h3>${sbFamName(c.p)}の表（${c.d?'親':'子'}）</h3>${sbTable(sbFam(c.p),c.d,{p:c.p,h:c.h,mine:Q.ok?null:Q.sel})}
      <p class="sub">青＝正解${Q.ok?'':'　赤枠＝あなたの答え'}</p></div>`);
 }
@@ -1846,17 +1916,17 @@ function sbDrawTotal(){
   const key=(v,label,cur,ansV)=>{let k='';if(d){if(v===ansV)k='ok';else if(v===cur)k='ng';}return `<button class="key ${k}" type="button" data-v="${v}" aria-pressed="${cur===v}" ${d?'disabled':''}>${label}</button>`;};
   let pad;
   if(Q.step==='a')pad=`<div class="pad c3">${SB_AG.map(([v,l])=>key(v,l,Q.a,Q.g)).join('')}</div>`;
-  else if(Q.step==='h')pad=`<div class="pad c4">${range(1,14).map(n=>key(n,n+'<small>翻</small>',Q.h,r.han)).join('')}</div>`;
+  else if(Q.step==='h')pad=`<div class="pad c7">${range(1,14).map(n=>key(n,String(n),Q.h,r.han)).join('')}</div>`;
   else if(Q.step==='s')pad=`<div class="pad c4">${[0,1,2,3].map(n=>key(n,(n===3?'3〜':n)+'<small>段階</small>',Q.s,Q.steps)).join('')}</div><div class="pad c2" style="margin-top:6px">${key('x',`不要<small>平和・七対子・${sbMaxStepHan()+1}翻以上</small>`,Q.s,Q.steps)}</div>`;
   else pad=`<div class="pad c2">${Q.opts.map(o=>key(o,o,Q.pt,Q.ans)).join('')}</div>`;
   const hint={a:'表を選ぶ：ツモ／門前ロン／鳴いてロン／平和／七対子',h:'役とドラを合計した翻数',s:'手牌の符（ツモの2符も込み）で何段階上がるか。12符で1・22符で2',pt:ctx.tsumo?(ctx.dealer?'親のツモは「◯オール」':'子のツモは「子の払い・親の払い」'):(ctx.dealer?'親のロン':'子のロン')}[Q.step];
   render(`${courseSeg()}
     <div class="qhead"><p class="prompt">渋川式で何点？</p>${stHTML()}</div>
-    <div class="felt">
+<!--CTRL-->
+    <div class="felt sbtot">
       <div class="chips"><span class="chip">${KAZE[ctx.bakaze-27]}場</span><span class="chip ${ctx.dealer?'em':''}">${KAZE[ctx.jikaze-27]}家・${ctx.dealer?'親':'子'}</span>${ctx.riichi?'<span class="chip">立直</span>':''}<span class="chip">ドラ${ctx.dora}${ctx.riichi&&ctx.dora?'（裏込み）':''}</span></div>
       ${handScoreHTML(ctx)}
     </div>
-<!--CTRL-->
     <div class="steps" style="grid-template-columns:repeat(4,1fr)">${stepH}</div>
     <p class="hint">${hint}</p>
     ${pad}`);
