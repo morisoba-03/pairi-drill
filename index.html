@@ -363,7 +363,7 @@ button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
 .mk-ng .tile{opacity:.55;box-shadow:0 var(--d) 0 0 var(--tile-mid),0 calc(var(--d)*2.4) 0 0 var(--tile-back),0 0 0 3px var(--bad)}
 
 /* 読み */
-.river{display:flex;flex-direction:column;gap:3px;align-self:flex-start;margin-left:6%;--tw:min(32px,calc((100cqw - 30px) / 7.6))}
+.river{display:flex;flex-direction:column;gap:2px;align-self:flex-start;margin-left:6%;--tw:min(28px,calc((100cqw - 30px) / 7.6))}
 .rrow{display:flex;gap:1px;align-items:flex-end}
 .tile.tg{filter:brightness(.82) saturate(.8)}
 .tile.dora{--tw:20px;margin-bottom:2px}
@@ -395,7 +395,7 @@ button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
 .exriver .river{--tw:min(26px,calc((100cqw - 30px) / 7.6))}
 .kindrow{display:flex;justify-content:center}
 .kindrow .seg{width:100%;display:grid;grid-template-columns:1fr 1fr}
-.kindrow .seg button{min-height:40px;font-size:14px}
+.kindrow .seg button{min-height:34px;font-size:14px}
 .ex p{margin:0;font-size:14px;line-height:1.7}
 .why{margin:0;padding-left:1.2em;font-size:13px}
 .shp{list-style:none;margin:2px 0 0;padding:0;display:flex;flex-direction:column;gap:2px;font-size:12px}
@@ -520,6 +520,20 @@ button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
 .pad.c3{grid-template-columns:repeat(3,1fr)}
 .pad.c7{grid-template-columns:repeat(7,1fr);gap:5px}
 .pad.c6{grid-template-columns:repeat(6,1fr);gap:5px}
+.pad.c1{grid-template-columns:1fr}
+.pad.tp .key{font-size:16px;padding:0 2px}
+.pad.c1 .key{min-height:40px;font-size:15px}
+.tpstep b{font-size:14px}
+.tpstep span .tile{margin-bottom:2px}
+.revb{display:inline-block;margin-right:6px;padding:1px 8px;border-radius:999px;background:var(--sel);color:var(--sel-ink);font-size:11px;font-weight:700}
+.revb.w{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.kindrow .seg.c4{grid-template-columns:repeat(4,1fr)}
+.bdrow{display:flex;flex-direction:column;gap:2px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.bdw{margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-weight:700}
+.bdt{display:inline-flex;flex-direction:column;align-items:center}
+.bdt small{font-size:10px;color:var(--muted)}
+.wk{display:grid!important;grid-template-columns:1fr 40%;align-items:center;gap:8px}
+.wk i{display:block;height:8px;border-radius:4px;background:var(--bad)}
 .pad.c6 .key{min-height:46px;font-size:17px;padding:0}
 .pad.c6 .key small{font-size:10px;margin-left:1px}
 .menutg{flex:1;min-width:0;display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 12px;min-height:34px;font-size:13px;text-align:left}
@@ -1441,8 +1455,96 @@ const $=s=>root.querySelector(s);
 const view=$('#view'),ctrl=$('#ctrl'),go=$('#go'),ex=$('#ex'),exT=$('#exT');
 function render(h){const i=h.indexOf('<!--CTRL-->');view.innerHTML=h.slice(0,i);ctrl.innerHTML=h.slice(i+11);}
 const LVN=['','初級','中級','上級'];
-function cur(){const k=(mode==='score'&&course==='shibu')?'shibu'+shibu.stage:mode+(mode==='read'?(typeof readKind!=='undefined'?readKind:'hit'):'')+levels[mode];return stats[k]||(stats[k]={ok:0,n:0,st:0});}
-function stHTML(){const s=cur();return `<span class="st" id="st"><b>${s.ok}</b>/${s.n}問 · 連続<b>${s.st}</b></span>`;}
+
+// ===== 苦手の記録と出し直し =====
+// 間違えた問題は「同じ問題」を3問後、「牌の色や数字を入れ替えた類題」を7問後にもう一度出す。
+// あわせて、間違えた項目（役・符・待ちの形など）を苦手として記録し、その項目を含む問題を多めに出す。
+let weak=LS.get('weak',{});
+const saveWeak=()=>LS.set('weak',weak);
+let pend=[],qCount={};
+let scoreKind=LS.get('scoreKind','agari');if(!['agari','tenpai'].includes(scoreKind))scoreKind='agari';
+let waitN=LS.get('waitN',13);if(![4,7,10,13].includes(waitN))waitN=13;
+let kiruKind=LS.get('kiruKind','cut');if(!['cut','uke'].includes(kiruKind))kiruKind='cut';
+function qKey(){
+  if(mode==='score')return course==='shibu'?'shibu'+shibu.stage:'score'+scoreKind+levels.score;
+  return mode+({read:readKind,kiru:kiruKind,wait:waitN}[mode]||'')+levels[mode];
+}
+function wGroup(){return mode==='score'?(course==='shibu'?'shibu':scoreKind==='tenpai'?'tenpai':'score'):mode==='kiru'?'kiru'+kiruKind:mode;}
+function weakAdd(tags){const g=weak[wGroup()]||(weak[wGroup()]={});new Set(tags).forEach(t=>{g[t]=Math.min(8,(g[t]||0)+1);});saveWeak();}
+function weakDecay(tags){const g=weak[wGroup()];if(!g)return;new Set(tags).forEach(t=>{if(g[t]){g[t]*=0.6;if(g[t]<0.3)delete g[t];}});saveWeak();}
+function pickWeakTag(){
+  const g=weak[wGroup()]||{},ks=Object.keys(g);if(!ks.length)return null;
+  const tot=ks.reduce((a,k)=>a+g[k],0);
+  // 苦手が多いほど、苦手を含む問題の割合を上げる（最大65%）
+  if(Math.random()>Math.min(0.65,0.25+tot*0.08))return null;
+  let r=Math.random()*tot;for(const k of ks){r-=g[k];if(r<=0)return k;}return ks[0];
+}
+function biasedGen(gen,tagsOf){
+  const want=pickWeakTag();let first=null;const t0=performance.now();
+  for(let i=0;i<40;i++){
+    const q=gen();if(!q)continue;if(!first)first=q;if(!want)return q;
+    if(tagsOf(q).includes(want)){q._weak=want;return q;}
+    if(performance.now()-t0>200)break;
+  }
+  return first;
+}
+function schedule(make,variant,type){
+  const k=qKey(),n=qCount[k]||0;
+  if(pend.filter(x=>x.key===k).length>=6)return;
+  // 復習で再び間違えたときは、同じ問題は繰り返さず類題だけを少し後に出す
+  if(Q&&Q._review){if(variant!==false)pend.push({key:k,at:n+4,make,kind:'variant',type});return;}
+  pend.push({key:k,at:n+3,make,kind:'same',type});
+  if(variant!==false)pend.push({key:k,at:n+7,make,kind:'variant',type});
+}
+function takePending(type){
+  const k=qKey(),n=qCount[k]||0,i=pend.findIndex(x=>x.key===k&&x.at<=n&&(!type||x.type===type));
+  if(i<0)return null;
+  const x=pend.splice(i,1)[0];let q=null;try{q=x.make(x.kind);}catch(e){q=null;}
+  if(q)q._review=x.kind;return q;
+}
+const TAGCAT={y:'役',f:'符',p:'点数',a:'アガリ方',w:'待ち',k:'何切る',u:'有効牌',r:'読み',t:'聴牌形'};
+const tagLabel=t=>`${TAGCAT[t[0]]||''}：${t.slice(2)}`;
+function revBadge(){
+  if(!Q||Q.done&&!Q._review&&!Q._weak)return '';
+  if(Q._review)return `<span class="revb">🔁 ${Q._review==='same'?'さっき間違えた問題':Q.sb==='card'?'類題（表の近い欄）':'類題（形は同じ・牌を入れ替え）'}</span>`;
+  if(Q._weak)return `<span class="revb w">苦手：${tagLabel(Q._weak)}</span>`;
+  return '';
+}
+// 類題づくり：萬子・筒子・索子の入れ替えと、数字の裏返し（1⇔9, 2⇔8…）。形・符・役の構造はそのまま
+function xformMaker(){
+  const perms=[[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]],opts=[];
+  perms.forEach(pm=>[false,true].forEach(mi=>{if(!(pm.join()==='0,1,2'&&!mi))opts.push({pm,mi});}));
+  return shuffle(opts).map(({pm,mi})=>t=>t>=27?t:pm[Math.floor(t/9)]*9+(mi?8-t%9:t%9));
+}
+const xCounts=(c,f)=>{const o=zeros();c.forEach((n,t)=>{if(n)o[f(t)]+=n;});return o;};
+function xformCtx(ctx,f){
+  const melds=ctx.melds.map(m=>m.k==='chi'?{k:'chi',t:Math.min(f(m.t),f(m.t+2))}:{k:m.k,t:f(m.t)});
+  return{...ctx,conc:xCounts(ctx.conc,f),melds,win:ctx.win==null?null:f(ctx.win)};
+}
+function variantScore(ctx){
+  for(const f of xformMaker()){const c2=xformCtx(ctx,f);const r=scoreHand(c2);if(r&&!r.yakuman)return{ctx:c2,r};}
+  return null;
+}
+// 点数計算の苦手タグ（h=翻、f=符、p=点数）
+const yTag=n=>'y:'+n.replace(/^(役牌|場風|自風) .*/,'$1');
+function scoreTagsBy(ctx,r){
+  const h=r.yaku.map(y=>yTag(y.name));if(!r.menzen&&r.yaku.some(y=>/三色同順|一気通貫|混全帯|純全帯|混一色|清一色/.test(y.name)))h.push('y:鳴いて下がる役');
+  const f=[];
+  if(r.chiitoi)f.push('f:七対子');
+  else if(r.pinfu)f.push(ctx.tsumo?'f:平和ツモ':'f:平和ロン');
+  else{
+    r.fuLines.forEach(([n])=>{
+      if(/待ち/.test(n))f.push('f:待ちの符');else if(/^雀頭/.test(n))f.push('f:雀頭の符');
+      else if(/槓/.test(n))f.push('f:槓子');else if(/刻/.test(n))f.push(/幺九/.test(n)?'f:幺九牌の刻子':'f:中張牌の刻子');
+      else if(/副露の平和形/.test(n))f.push('f:鳴きの30符');});
+    if(r.fu>=50)f.push('f:50符以上');
+  }
+  const p=[`p:${ctx.dealer?'親':'子'}の${ctx.tsumo?'ツモ':'ロン'}`,r.han>=5||r.pay.limit?'p:満貫以上':`p:${r.fu}符`];
+  return{h:[...new Set(h)],f:[...new Set(f)],p};
+}
+const scoreAllTags=(ctx,r)=>{const T=scoreTagsBy(ctx,r);return T.h.concat(T.f,T.p);};
+function cur(){const k=(mode==='score'&&course==='shibu')?'shibu'+shibu.stage:mode+(mode==='read'?(typeof readKind!=='undefined'?readKind:'hit'):mode==='score'&&scoreKind==='tenpai'?'tenpai':mode==='kiru'&&kiruKind==='uke'?'uke':mode==='wait'&&waitN!==13?'n'+waitN:'')+levels[mode];return stats[k]||(stats[k]={ok:0,n:0,st:0});}
+function stHTML(){const s=cur();return `<span class="st" id="st">${revBadge()}<b>${s.ok}</b>/${s.n}問 · 連続<b>${s.st}</b></span>`;}
 function record(ok){const s=cur();s.n++;if(ok){s.ok++;s.st++;}else s.st=0;LS.set('stats2',stats);const e=$('#st');if(e)e.outerHTML=stHTML();}
 
 function setMode(m){
@@ -1455,6 +1557,7 @@ function drawLv(){root.querySelectorAll('#lv button').forEach(b=>b.setAttribute(
 function next(){
   ex.hidden=true;exT.hidden=true;
   root.querySelector('#lv').hidden=mode==='score'&&course==='shibu';
+  const k=qKey();qCount[k]=(qCount[k]||0)+1;
   if(mode==='score')(course==='shibu'?newShibu():newScore());else if(mode==='wait')newWait();else if(mode==='read')newRead();else newKiru();
   view.scrollTop=0;
 }
@@ -1504,7 +1607,9 @@ function fuTips(ctx,r){
 
 const KAZE=['東','南','西','北'];
 function newScore(){
-  const lv=levels.score;const q=genScoreQ(rules,lv);
+  if(scoreKind==='tenpai')return newTenpai();
+  const lv=levels.score;
+  const q=takePending()||biasedGen(()=>genScoreQ(rules,lv),q=>scoreAllTags(q.ctx,q.r));
   Q={type:'score',lv,...q,h:null,f:lv===1?q.r.fu:null,p:null,step:'h',done:false,opts:scoreDistractors(q.ctx,q.r,rules).sort((a,b)=>payVal(a)-payVal(b))};
   drawScore();
 }
@@ -1581,7 +1686,10 @@ function drawScore(){
 function checkScore(){
   const r=Q.r;Q.done=true;
   Q.ok=Q.h===r.han&&(r.han>=5||Q.f===r.fu)&&Q.p===r.pay.text;
-  record(Q.ok);Q.step=Q.h!==r.han?'h':(r.han<5&&Q.f!==r.fu)?'f':'p';drawScore();
+  record(Q.ok);Q.step=Q.h!==r.han?'h':(r.han<5&&Q.f!==r.fu)?'f':'p';
+  {const T=scoreTagsBy(Q.ctx,r),bad=[];if(Q.h!==r.han)bad.push(...T.h);if(r.han<5&&Q.f!==r.fu)bad.push(...T.f);if(Q.p!==r.pay.text)bad.push(...T.p);
+   if(Q.ok)weakDecay(scoreAllTags(Q.ctx,r));else{weakAdd(bad);const src={ctx:Q.ctx,r};schedule(kd=>kd==='same'?src:variantScore(src.ctx));}}
+  drawScore();
   openEx(Q.ok,`${r.han}翻${r.han>=5?'':' '+r.fu+'符'} → <b>${r.pay.text}</b>${r.pay.limit?'（'+r.pay.limit+'）':''}`,scoreBody(),handScoreHTML(Q.ctx));
 }
 function memoHTML(ctx,r){
@@ -1706,11 +1814,12 @@ function sbWeight(id,ok,slow){const w=shibu.w[id]||1;shibu.w[id]=!ok?Math.min(10
 let menuOpen=!!LS.get('menuOpen',false);
 function courseSeg(){
   const a=shibu.rec[shibu.stage]||[],sb=course==='shibu';
-  const label=sb?(shibu.stage===7?`ミックス（ステップ${sbCur}）`:`${shibu.stage}：${SB_STAGES[shibu.stage].n}`)+(a.length?`<small>直近${a.reduce((x,y)=>x+y,0)}/${a.length}</small>`:''):'通常コース';
+  const label=sb?(shibu.stage===7?`ミックス（ステップ${sbCur}）`:`${shibu.stage}：${SB_STAGES[shibu.stage].n}`)+(a.length?`<small>直近${a.reduce((x,y)=>x+y,0)}/${a.length}</small>`:''):(scoreKind==='tenpai'?'聴牌形：何を引いたら何点':'アガリ形');
   const bar=`<div class="crs"><button type="button" class="menutg" data-menu aria-expanded="${menuOpen}"><b>${sb?'渋川式':'通常'}</b><span class="sbname">${label}</span><span class="chev" aria-hidden="true">${menuOpen?'▲':'▼'}</span></button>`
     +(sb?`<span class="sbbtns"><button type="button" class="sbhelp em" data-lesson>📖 解説</button><button type="button" class="sbhelp" data-ref aria-label="早見表">📋</button><button type="button" class="sbhelp" data-sbhelp aria-label="渋川式とは">？</button></span>`:'')+'</div>';
   if(!menuOpen)return bar;
   return bar+`<div class="menubody"><div class="crs"><span class="mlab">コース</span><div class="seg" role="group" aria-label="コース"><button type="button" data-course="normal" aria-pressed="${course==='normal'}">通常</button><button type="button" data-course="shibu" aria-pressed="${sb}">渋川式</button></div></div>`
+    +(!sb?`<div class="crs"><span class="mlab">出題</span><div class="seg" role="group" aria-label="出題の形"><button type="button" data-skind="agari" aria-pressed="${scoreKind==='agari'}">アガリ形</button><button type="button" data-skind="tenpai" aria-pressed="${scoreKind==='tenpai'}">聴牌形（何を引いたら何点）</button></div></div>`:'')
     +(sb?`<div class="stg">${[1,2,3,4,5,6,7].map(i=>`<button type="button" class="${i===7?'mx':''}" data-stage="${i}" aria-pressed="${shibu.stage===i}">${i===7?'🔀':shibu.cl[i]?'✓':i}<small>${SB_STAGES[i].s}</small></button>`).join('')}</div>`
       +((shibu.stage<=4||(shibu.stage===7&&shibu.mix.some(i=>i<=4)))?`<div class="ykset"><span>翻の出し方${shibu.stage===7?'（ステップ1〜4）':''}</span><div class="seg" role="group" aria-label="翻の出し方">${[['han','翻数'],['yaku','役名'],['mix','混ぜる']].map(([v,l])=>`<button type="button" data-disp="${v}" aria-pressed="${(shibu.disp||'han')===v}">${l}</button>`).join('')}</div></div>`:'')
       +(shibu.stage===7?`<div class="mixsel"><span>出題</span>${[1,2,3,4,5,6].map(i=>`<button type="button" data-mix="${i}" aria-pressed="${shibu.mix.includes(i)}" aria-label="ステップ${i} ${SB_STAGES[i].n}">${i}<small>${SB_STAGES[i].s}</small></button>`).join('')}</div>`:''):'')
@@ -1718,11 +1827,12 @@ function courseSeg(){
 }
 function setMenu(o){menuOpen=o;LS.set('menuOpen',o);}
 // メニューの開閉だけなら、問題は作り直さずに今の画面を描き直す
-function redrawQ(){if(!Q)return next();if(Q.sb==='card')sbDrawCard();else if(Q.sb==='steps')sbDrawSteps();else if(Q.sb==='total')sbDrawTotal();else if(mode==='score')drawScore();else next();}
+function redrawQ(){if(!Q)return next();if(Q.sb==='card')sbDrawCard();else if(Q.sb==='steps')sbDrawSteps();else if(Q.sb==='total')sbDrawTotal();else if(Q.type==='tenpai')drawTenpai();else if(mode==='score')drawScore();else next();}
 function bindCourse(){
   root.querySelectorAll('[data-menu]').forEach(b=>b.onclick=()=>{setMenu(!menuOpen);redrawQ();});
   root.querySelectorAll('[data-course]').forEach(b=>b.onclick=()=>{if(course===b.dataset.course)return;course=b.dataset.course;LS.set('course',course);if(course==='normal')setMenu(false);next();});
   root.querySelectorAll('[data-stage]').forEach(b=>b.onclick=()=>{shibu.stage=+b.dataset.stage;saveSb();if(shibu.stage!==7)setMenu(false);next();});
+  root.querySelectorAll('[data-skind]').forEach(b=>b.onclick=()=>{if(scoreKind===b.dataset.skind)return;scoreKind=b.dataset.skind;LS.set('scoreKind',scoreKind);setMenu(false);next();});
   root.querySelectorAll('[data-disp]').forEach(b=>b.onclick=()=>{if((shibu.disp||'han')===b.dataset.disp)return;shibu.disp=b.dataset.disp;saveSb();next();});
   root.querySelectorAll('[data-lesson]').forEach(b=>b.onclick=()=>openTutorial(shibu.stage===7?sbCur:shibu.stage));
   root.querySelectorAll('[data-ref]').forEach(b=>b.onclick=openRef);
@@ -1819,7 +1929,7 @@ const sbYkSum=y=>y.ys.map(x=>x.dora?x.n:`${x.n} ${x.ym?'役満':x.h}`).join('＋
 function sbDispUse(){const m=shibu.disp||'han';return m==='yaku'||(m==='mix'&&Math.random()<0.5);}
 
 // ---- 段階1〜4：表の暗記カード ----
-function sbNewCard(){const card=sbPickCard(sbCur);const o=sbCardOpts(card);const yk=sbDispUse()?sbYakuList(card):null;Q={type:'score',sb:'card',card,yk,ans:o.ans,opts:o.opts,sel:null,done:false,t0:Date.now()};sbDrawCard();}
+function sbNewCard(){const rv=takePending('card');const card=rv?rv.card:sbPickCard(sbCur);const o=sbCardOpts(card);const yk=sbDispUse()?sbYakuList(card):null;Q={type:'score',sb:'card',card,yk,ans:o.ans,opts:o.opts,sel:null,done:false,t0:Date.now(),_review:rv?rv._review:null};sbDrawCard();}
 function sbDrawCard(){
   const c=Q.card,P=SB_PAT[c.p],d=Q.done;
   const hint=P.ts?(c.d?'親のツモは「◯オール」で答えます':'子のツモは「子の払い・親の払い」で答えます'):'';
@@ -1836,7 +1946,14 @@ function sbDrawCard(){
 }
 function sbCheckCard(){
   const c=Q.card;Q.done=true;Q.ok=Q.sel===Q.ans;
-  sbWeight(c.id,Q.ok,Date.now()-Q.t0>7000);record(Q.ok);const msg=sbProgress(Q.ok);sbDrawCard();
+  sbWeight(c.id,Q.ok,Date.now()-Q.t0>7000);record(Q.ok);
+  if(!Q.ok){
+    // 類題：同じ表の隣の翻・同じ翻の別の表・親子の取り違えも重みを上げる
+    sbCards(4).concat(sbCards(1),sbCards(2),sbCards(3)).forEach(x=>{
+      const near=(x.p===c.p&&x.d===c.d&&Math.abs(x.h-c.h)===1)||(x.h===c.h&&x.d===c.d&&x.p!==c.p&&sbFam(c.p).includes(x.p))||(x.p===c.p&&x.h===c.h&&x.d!==c.d);
+      if(near)shibu.w[x.id]=Math.min(10,(shibu.w[x.id]||1)+1.5);});
+    const card=c;schedule(kd=>{if(kd==='same')return{card};const cs=sbCards(sbCur).filter(x=>x.id!==card.id&&((x.p===card.p&&Math.abs(x.h-card.h)===1)||(x.h===card.h&&sbFam(card.p).includes(x.p))));return cs.length?{card:pick(cs)}:null;},true,'card');
+  }const msg=sbProgress(Q.ok);sbDrawCard();
   const P=SB_PAT[c.p];
   openEx(Q.ok,`${c.d?'親':'子'}・${P.n}・${c.h}翻 → <b>${Q.ans}</b>${msg}`,
     `${Q.yk?`<div><h3>翻の数え方${Q.yk.open?'（鳴きあり：喰い下がりに注意）':''}</h3><p>${sbYkSum(Q.yk)} ＝ <b>${Q.yk.ys.some(x=>x.ym)?'役満':c.h+'翻'}</b></p></div>`:''}<div><h3>どの表を見るか</h3><p>${sbTip(c.p,c.d)}</p>${c.d?`<p class="sub">${sbDealerTip(c.p,c.h,P.ts)}</p>`:''}</div>
@@ -1897,7 +2014,7 @@ function sbStepsExplain(Q2){
     ${st?`<p class="sub">覚え方：50符は「25符（七対子）の表を1翻上」、60符は「30符の表を1翻上」で読めます。</p>`:''}</div>`;
 }
 function sbNewSteps(){
-  const q=sbGenHand(5);if(!q){sbCur=4;return sbNewCard();}
+  const q=takePending('steps')||biasedGen(()=>sbGenHand(5),q=>scoreTagsBy(q.ctx,q.r).f);if(!q){sbCur=4;return sbNewCard();}
   const st=Math.max(0,(q.r.fu-SB_PAT[q.p].fu)/10);
   Q={type:'score',sb:'steps',...q,ans:Math.min(3,st),sel:null,done:false};sbDrawSteps();
 }
@@ -1911,7 +2028,8 @@ function sbDrawSteps(){
     <div class="pad c4">${[0,1,2,3].map(n=>{let k='';if(d){if(n===Q.ans)k='ok';else if(n===Q.sel)k='ng';}
       return `<button class="key ${k}" type="button" data-v="${n}" aria-pressed="${Q.sel===n}" ${d?'disabled':''}>${n===3?'3〜':n}<small>段階</small></button>`;}).join('')}</div>`);
   bindCourse();
-  if(!d){root.querySelectorAll('.pad .key').forEach(b=>b.onclick=()=>{Q.sel=+b.dataset.v;Q.done=true;Q.ok=Q.sel===Q.ans;record(Q.ok);const msg=sbProgress(Q.ok);sbDrawSteps();
+  if(!d){root.querySelectorAll('.pad .key').forEach(b=>b.onclick=()=>{Q.sel=+b.dataset.v;Q.done=true;Q.ok=Q.sel===Q.ans;record(Q.ok);
+      {const tg=scoreTagsBy(Q.ctx,Q.r).f;if(Q.ok)weakDecay(tg);else{weakAdd(tg);const src={ctx:Q.ctx,r:Q.r,p:Q.p};schedule(kd=>{if(kd==='same')return src;const v=variantScore(src.ctx);return v?{...v,p:sbPatOf(v.ctx,v.r)}:null;},true,'steps');}}const msg=sbProgress(Q.ok);sbDrawSteps();
       openEx(Q.ok,`<b>${Q.ans}段階</b>（${Q.r.fu}符）・${Q.r.han}翻 → ${Q.r.pay.text}${msg}`,sbStepsExplain(Q)+`<div><h3>手の分け方</h3><div class="split">${sbSplit(Q.r,Q.ctx.win)}</div></div>`,handScoreHTML(Q.ctx));});
     setGo('答えをタップ',false,null);}
   else setGo('次の問題',true,next);
@@ -1921,7 +2039,7 @@ const backBtn=on=>on?'<button type="button" class="backstep" data-back>← 戻�
 // 総合：①アガリ方 ②翻 ③段階 ④点数 を順に答える
 const SB_AG=[['tsumo','ツモ'],['menron','門前ロン'],['nakiron','鳴いてロン'],['pin','平和'],['chi','七対子']];
 function sbNewTotal(){
-  const q=sbGenHand(6);if(!q){return sbNewCard();}
+  const q=takePending('total')||biasedGen(()=>sbGenHand(6),q=>{const T=scoreTagsBy(q.ctx,q.r);return T.h.concat(T.f,T.p,['a:'+SB_PAT[q.p].n]);});if(!q){return sbNewCard();}
   const {ctx,r,p}=q,g=sbGroup(p),need=!['pin','chi'].includes(g)&&r.han<=sbMaxStepHan();
   const steps=need?Math.min(3,Math.max(0,(r.fu-SB_PAT[p].fu)/10)):'x';
   const ans=r.pay.text,near=[];
@@ -1973,6 +2091,8 @@ function sbCheckTotal(){
   const {ctx,r,p,g}=Q;Q.done=true;
   const okA=Q.a===g,okH=Q.h===r.han,okS=Q.s===Q.steps,okP=Q.pt===Q.ans;
   Q.ok=okA&&okH&&okS&&okP;record(Q.ok);const msg=sbProgress(Q.ok);
+  {const T=scoreTagsBy(ctx,r),bad=[];if(!okA)bad.push('a:'+SB_PAT[p].n);if(!okH)bad.push(...T.h);if(!okS)bad.push(...T.f);if(!okP)bad.push(...T.p);
+   if(Q.ok)weakDecay(T.h.concat(T.f,T.p,['a:'+SB_PAT[p].n]));else{weakAdd(bad);const src={ctx,r,p};schedule(kd=>{if(kd==='same')return src;const v=variantScore(src.ctx);return v?{...v,p:sbPatOf(v.ctx,v.r)}:null;},true,'total');}}
   Q.step=!okA?'a':!okH?'h':!okS?'s':'pt';sbDrawTotal();
   const mk=o=>`<span class="okx ${o?'o':'x'}">${o?'○':'×'}</span>`;
   const yaku=r.yaku.map(y=>`${y.name} ${y.han}`).join('・')+(ctx.dora?`・ドラ${ctx.dora}`:'');
@@ -2492,8 +2612,135 @@ function drawTut(){
   bindBasics(()=>drawTut());
 }
 
+
+// ===== 聴牌形：何を引いたら何点？ =====
+// アガリ形を作ってからアガリ牌を抜き、待ちごとに点数を出す。待ちで平和・三色・符が変わる手を多めに出す
+const meldTiles=m=>m.k==='chi'?[m.t,m.t+1,m.t+2]:m.k==='pon'?[m.t,m.t,m.t]:[m.t,m.t,m.t,m.t];
+function tenpaiRows(ctx){
+  const used=ctx.conc.slice();ctx.melds.forEach(m=>meldTiles(m).forEach(t=>used[t]++));
+  const ws=waitsOf(ctx.conc.slice()).filter(t=>used[t]<4);
+  return ws.map(t=>{const cc=ctx.conc.slice();cc[t]++;const c2={...ctx,conc:cc,win:t};const r=scoreHand(c2);return{t,ctx:c2,r:r&&!r.yakuman?r:null,ym:!!(r&&r.yakuman)};});
+}
+function genTenpaiQ(lv){
+  for(let k=0;k<300;k++){
+    const q=genScoreQ(rules,lv);if(!q)continue;
+    const c13=q.ctx.conc.slice();c13[q.ctx.win]--;
+    const ctx={...q.ctx,conc:c13,win:null};
+    const rows=tenpaiRows(ctx);
+    if(rows.length<2||rows.length>4||rows.some(x=>x.ym)||rows.every(x=>!x.r))continue;
+    const vals=new Set(rows.map(x=>x.r?x.r.pay.text:'役なし'));
+    if(vals.size<2&&Math.random()<0.8)continue;
+    return{ctx,rows};
+  }
+  return null;
+}
+const TP_NONE='役なし';
+function tenpaiOpts(q){
+  const ref=q.rows.find(x=>x.r);
+  return q.rows.map(x=>{
+    const base=x.r?x:ref,ans=x.r?x.r.pay.text:TP_NONE;
+    const ds=scoreDistractors(base.ctx,base.r,rules).filter(t=>t!==ans);
+    // 他の待ちの点数も混ぜる（取り違えやすいので）
+    const others=q.rows.filter(y=>y.r&&y.r.pay.text!==ans).map(y=>y.r.pay.text);
+    const pool=[...new Set(others.concat(ds))].slice(0,x.r?3:4);
+    return pool.concat(x.r?[ans]:[]).sort((a,b)=>payVal(a)-payVal(b));
+  });
+}
+function tenpaiTags(q){return q.rows.flatMap(x=>x.r?scoreAllTags(x.ctx,x.r):['t:役なしの待ち']);}
+function variantTenpai(ctx){
+  for(const f of xformMaker()){const c2=xformCtx(ctx,f);const rows=tenpaiRows(c2);if(rows.length>=2&&!rows.some(x=>x.ym)&&rows.some(x=>x.r))return{ctx:c2,rows};}
+  return null;
+}
+function newTenpai(){
+  const lv=levels.score;
+  const q=takePending()||biasedGen(()=>genTenpaiQ(lv),tenpaiTags);
+  if(!q){scoreKind='agari';return newScore();}
+  Q={type:'tenpai',...q,opts:tenpaiOpts(q),sel:q.rows.map(()=>null),cur:0,done:false};
+  drawTenpai();
+}
+function tenpaiHTML(ctx){
+  const concArr=toArr(ctx.conc);let melds='',units=0;
+  ctx.melds.forEach(m=>{
+    let h;
+    if(m.k==='chi'){h=tileHTML(m.t,{side:true})+tiles([m.t+1,m.t+2]);units+=3.34;}
+    else if(m.k==='pon'){h=tiles([m.t,m.t])+tileHTML(m.t,{side:true});units+=3.34;}
+    else if(m.k==='minkan'){h=tiles([m.t,m.t])+tileHTML(m.t,{side:true})+tileHTML(m.t);units+=4.34;}
+    else{h=tileHTML(m.t,{back:true})+tiles([m.t,m.t])+tileHTML(m.t,{back:true});units+=4;}
+    melds+=`<div class="meld">${h}</div>`;
+  });
+  units+=Math.max(0,ctx.melds.length-1)*.3;
+  const n=Math.max(concArr.length+.4,units,10.5);
+  return `<div class="row" style="--n:${n}">${tiles(concArr)}</div>`+(melds?`<div class="meldrow" style="--n:${Math.max(n,units+1)}">${melds}</div>`:'');
+}
+const tpAns=x=>x.r?x.r.pay.text:TP_NONE;
+function drawTenpai(){
+  const {ctx,rows}=Q,d=Q.done,n=rows.length;
+  const stepH=rows.map((x,i)=>{let c=Q.cur===i&&!d?'on':'';if(d)c=(Q.sel[i]===tpAns(x)?'ok':'ng')+(Q.cur===i?' on':'');
+    return `<button class="step tpstep ${c}" type="button" data-i="${i}"><span style="--tw:20px">${tileHTML(x.t)}</span><b>${Q.sel[i]==null?'—':Q.sel[i]}</b></button>`;}).join('');
+  const key=(v)=>{const cur=Q.sel[Q.cur],ans=tpAns(rows[Q.cur]);let k='';if(d){if(v===ans)k='ok';else if(v===cur)k='ng';}
+    return `<button class="key ${k}" type="button" data-v="${v}" aria-pressed="${cur===v}" ${d?'disabled':''}>${v}</button>`;};
+  const pad=`<div class="pad c3 tp">${Q.opts[Q.cur].map(key).join('')}${key(TP_NONE)}</div>`;
+  const who=(ctx.dealer?'親':'子')+'・'+(ctx.tsumo?'ツモ':'ロン');
+  render(`${courseSeg()}
+    <div class="qhead"><p class="prompt">どれを引いたら何点？</p>${stHTML()}</div>
+<!--CTRL-->
+    <div class="felt sbtot">
+      <div class="chips"><span class="chip em">${ctx.tsumo?'ツモ':'ロン'}で</span><span class="chip">${KAZE[ctx.bakaze-27]}場</span><span class="chip ${ctx.dealer?'em':''}">${KAZE[ctx.jikaze-27]}家・${ctx.dealer?'親':'子'}</span>${ctx.riichi?'<span class="chip">立直</span>':''}<span class="chip">ドラ${ctx.dora}${ctx.riichi&&ctx.dora?'（裏込み）':''}</span></div>
+      ${tenpaiHTML(ctx)}
+    </div>
+    <div class="steps" style="grid-template-columns:repeat(${n},1fr)">${stepH}</div>
+    <div class="hintrow">${backBtn(!d&&Q.cur>0)}<p class="hint">${tLabel(rows[Q.cur].t)}でアガったら？（${who}）</p></div>
+    ${pad}`);
+  bindCourse();
+  root.querySelectorAll('.tpstep').forEach(b=>b.onclick=()=>{Q.cur=+b.dataset.i;drawTenpai();});
+  if(!d){
+    root.querySelectorAll('.pad .key').forEach(b=>b.onclick=()=>{Q.sel[Q.cur]=b.dataset.v;if(Q.cur<n-1)Q.cur++;drawTenpai();});
+    root.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{if(Q.cur>0)Q.cur--;drawTenpai();});
+    setGo('答え合わせ',Q.sel.every(v=>v!=null),checkTenpai);
+  }else setGo('次の問題',true,next);
+}
+function checkTenpai(){
+  const {rows}=Q;Q.done=true;
+  const okEach=rows.map((x,i)=>Q.sel[i]===tpAns(x));Q.ok=okEach.every(Boolean);record(Q.ok);
+  const bad=rows.filter((x,i)=>!okEach[i]).flatMap(x=>x.r?scoreAllTags(x.ctx,x.r):['t:役なしの待ち']);
+  if(Q.ok)weakDecay(tenpaiTags(Q));else{weakAdd(bad);const src={ctx:Q.ctx,rows:Q.rows};schedule(kd=>kd==='same'?src:variantTenpai(src.ctx));}
+  const fi=okEach.indexOf(false);Q.cur=fi<0?0:fi;drawTenpai();
+  openEx(Q.ok,rows.map(x=>`${tLabel(x.t)} → <b>${tpAns(x)}</b>`).join('　'),tenpaiBody(okEach),tenpaiHTML(Q.ctx));
+}
+function tenpaiBody(okEach){
+  const {ctx,rows}=Q;
+  const ys=rows.map(x=>x.r?new Set(x.r.yaku.map(y=>y.name)):new Set());
+  const common=[...ys[0]].filter(n=>ys.every(s=>s.has(n)));
+  const body=rows.map((x,i)=>{
+    const mk=`<span class="okx ${okEach[i]?'o':'x'}">${okEach[i]?'○':'×'}</span>`;
+    if(!x.r){
+      return `<div class="waitrow"><div class="top">${tileHTML(x.t,{cls:'win'})}<b>役なし</b>${mk}</div><p class="sub">この牌でアガる形には役がひとつもありません${ctx.melds.some(m=>m.k!=='ankan')?'（鳴いているので立直・門前ツモもつかない）':''}。アガれないので、この待ちは実質「待ちではない」と考えます。</p></div>`;}
+    const r=x.r,own=r.yaku.filter(y=>!common.includes(y.name));
+    const lack=[...new Set(rows.flatMap(y=>y.r?y.r.yaku.map(z=>z.name):[]))].filter(nm=>!ys[i].has(nm)&&!common.includes(nm));
+    const fuX=r.chiitoi||r.pinfu?'':r.fuLines.filter(f=>!/^副底|^門前ロン|^ツモ$/.test(f[0])).map(f=>`${f[0].replace(/（.*?）/g,'')}＋${f[1]}符`).join('・');
+    return `<div class="waitrow"><div class="top">${tileHTML(x.t,{cls:'win'})}<b>${r.pay.text}</b>${mk}<span class="tag">${WAITNAME[r.wait]||''}待ち</span></div>
+      <p>${r.yaku.map(y=>`${y.name} ${y.han}`).join('・')}${ctx.dora?`・ドラ${ctx.dora}`:''} ＝ <b>${r.han}翻</b>${r.han<5?`・<b>${r.fu}符</b>`:''}${r.pay.limit?'（'+r.pay.limit+'）':''}</p>
+      ${own.length||lack.length?`<p class="sub">違い：${own.map(y=>`<b>＋${y.name}</b>`).join('・')}${own.length&&lack.length?'　':''}${lack.length?lack.map(n=>`${n}なし`).join('・'):''}</p>`:''}
+      ${fuX&&r.han<5?`<p class="sub">符の内訳（副底・アガリ方以外）：${fuX}</p>`:''}</div>`;
+  }).join('');
+  return `<div><h3>待ちごとの点数</h3>${body}</div>
+    <div><h3>覚え方</h3><ul class="guide"><li>同じ聴牌でも、<b>どの牌でアガるか</b>で平和・三色・一盃口などの役や、待ちの符（嵌張・辺張・単騎は+2符）が変わります。</li>
+    <li>実戦では、聴牌した時点で「高い方」「安い方」の点数を先に数えておくと、アガった瞬間に申告できます。</li></ul></div>`;
+}
+
 // ===== 待ち当て =====
-function newWait(){const q=genWaitQ(levels.wait);Q={type:'wait',...q,sel:new Set(),done:false};drawWait();}
+function waitTags(hand,waits){
+  const t=[],ts=toArr(hand),suits=new Set(ts.map(x=>x>=27?3:Math.floor(x/9)));
+  if(suits.size===1&&!suits.has(3))t.push('w:清一色');if(waits.length>=3)t.push('w:3種以上');
+  waits.forEach(w=>{const i=waitShapes(hand,w);i.shapes.forEach(s=>t.push('w:'+WAITNAME[s]));if(i.chiitoi)t.push('w:七対子');});
+  return [...new Set(t)];
+}
+function variantWait(hand){for(const f of xformMaker()){const h=xCounts(hand,f);const w=waitsOf(h.slice());if(w.length)return{hand:h,waits:w};}return null;}
+function newWait(){
+  const lv=levels.wait,gen=()=>waitN===13?genWaitQ(lv):genWaitSmall(waitN,lv);
+  const q=takePending()||biasedGen(gen,q=>waitTags(q.hand,q.waits));
+  Q={type:'wait',...q,sel:new Set(),done:false};drawWait();
+}
 function drawWait(){
   const d=Q.done;const ws=new Set(Q.waits);const lv=levels.wait;
   const rows=[];
@@ -2503,20 +2750,86 @@ function drawWait(){
     let m='';if(d){if(ws.has(t)&&Q.sel.has(t))m='mk-ok';else if(ws.has(t))m='mk-miss';else if(Q.sel.has(t))m='mk-ng';}
     else if(Q.sel.has(t))m='on';
     return `<button class="pick ${m}" type="button" data-t="${t}" aria-pressed="${Q.sel.has(t)}" aria-label="${tLabel(t)}" ${d?'disabled':''}>${tileHTML(t)}</button>`;}).join('')}</div>`).join('');
-  const hint=['','待ちは1〜2種類','待ちは2〜3種類','清一色の多面張・待ちは3種類以上'][lv];
+  const hint=['','待ちは1〜2種類','待ちは2〜3種類','待ちは3種類以上'][lv]+(waitN<13?`（${waitN}枚・清一色）`:'');
+  const nT=sum(Q.hand);
   render(`
+    <div class="kindrow"><div class="seg c4" role="group" aria-label="手牌の枚数">${[4,7,10,13].map(n=>`<button type="button" data-wn="${n}" aria-pressed="${waitN===n}">${n}枚</button>`).join('')}</div></div>
     <div class="qhead"><p class="prompt">待ち牌をすべて選ぶ</p>${stHTML()}</div>
-    <div class="felt"><div class="row" style="--n:13.6">${tiles(toArr(Q.hand))}</div></div>
+    <div class="felt"><div class="row" style="--n:${Math.max(nT+.6,8)}">${tiles(toArr(Q.hand))}</div></div>
 <!--CTRL-->
     <p class="hint">${hint}。手にある色の牌から選びます。</p>
     <div class="cand">${candH}</div>`);
+  root.querySelectorAll('[data-wn]').forEach(b=>b.onclick=()=>{const n=+b.dataset.wn;if(n===waitN)return;waitN=n;LS.set('waitN',n);next();});
   if(!d){
     root.querySelectorAll('.cand .pick').forEach(b=>b.onclick=()=>{const t=+b.dataset.t;Q.sel.has(t)?Q.sel.delete(t):Q.sel.add(t);drawWait();});
     setGo(Q.sel.size?`答え合わせ（${Q.sel.size}種）`:'待ち牌をタップ',Q.sel.size>0,()=>{
-      Q.done=true;Q.ok=Q.sel.size===ws.size&&[...Q.sel].every(t=>ws.has(t));record(Q.ok);drawWait();
-      openEx(Q.ok,`待ちは <b>${Q.waits.map(tLabel).join('・')}</b>（${Q.waits.length}種）`,waitBody(),`<div class="row" style="--n:13.6">${tiles(toArr(Q.hand))}</div>`);
+      Q.done=true;Q.ok=Q.sel.size===ws.size&&[...Q.sel].every(t=>ws.has(t));record(Q.ok);
+      {const all=waitTags(Q.hand,Q.waits);if(Q.ok)weakDecay(all);else{const miss=Q.waits.filter(w=>!Q.sel.has(w));
+        weakAdd((miss.length?waitTags(Q.hand,miss):[]).concat(all.filter(x=>x==='w:清一色'||x==='w:3種以上')));
+        const src={hand:Q.hand.slice(),waits:Q.waits.slice()};schedule(kd=>kd==='same'?src:variantWait(src.hand));}}
+      drawWait();
+      openEx(Q.ok,`待ちは <b>${Q.waits.map(tLabel).join('・')}</b>（${Q.waits.length}種）`,waitBody(),`<div class="row" style="--n:${Math.max(sum(Q.hand)+.6,8)}">${tiles(toArr(Q.hand))}</div>`);
     });
   }else setGo('次の問題',true,next);
+}
+
+function genWaitSmall(n,level){
+  const k=(n-1)/3;
+  for(let a=0;a<5000;a++){
+    const pool=poolFor('chin'),c=zeros();let ok=true;
+    for(let i=0;i<k;i++){if(!randGroup(c,pool,0.3)){ok=false;break;}}
+    if(!ok)continue;
+    const pp=pool.filter(t=>c[t]<=2);c[pick(pp)]+=2;
+    c[pick(toArr(c))]--;
+    const w=waitsOf(c.slice());if(!w.length)continue;
+    if(a<3000){if(level===1&&w.length>2)continue;if(level===2&&(w.length<2||w.length>3))continue;if(level===3&&w.length<3)continue;}
+    return{hand:c,waits:w};
+  }
+  return genWaitQ(level);
+}
+// 見つけ方：面子（順子・刻子）を抜いて、残り1枚か4枚の形から待ちを決める
+function restWaits(rest,orig){
+  const out=[],add=(t,s)=>{if(t>=0&&orig[t]<4&&!out.some(o=>o.t===t&&o.s===s))out.push({t,s});};
+  if(rest.length===1){add(rest[0],'tanki');return out;}
+  const ds=[...new Set(rest)];
+  ds.forEach(pr=>{
+    if(rest.filter(x=>x===pr).length<2)return;
+    const r2=rest.slice();r2.splice(r2.indexOf(pr),1);r2.splice(r2.indexOf(pr),1);
+    const [a,b]=r2.sort((x,y)=>x-y);
+    if(a===b){add(a,'shanpon');add(pr,'shanpon');return;}
+    if(a>=27||b>=27||Math.floor(a/9)!==Math.floor(b/9))return;
+    const d=b-a,n=a%9;
+    if(d===1){if(n===0)add(a+2,'penchan');else if(n===7)add(a-1,'penchan');else{add(a-1,'ryanmen');add(b+1,'ryanmen');}}
+    else if(d===2)add(a+1,'kanchan');
+  });
+  return out;
+}
+function waitBreakdown(hand){
+  const c=hand.slice(),orig=hand,rows=new Map(),acc=[],rest=[];
+  (function rec(i){
+    while(i<34&&!c[i])i++;
+    if(rows.size>30)return;
+    if(i===34){
+      if(rest.length===1||rest.length===4){const key=rest.join(',');if(!rows.has(key)){const ws=restWaits(rest,orig);if(ws.length)rows.set(key,{groups:acc.slice(),rest:rest.slice(),ws});}}
+      return;
+    }
+    if(c[i]>=3){c[i]-=3;acc.push({k:'kou',t:i});rec(i);acc.pop();c[i]+=3;}
+    if(i<27&&i%9<=6&&c[i+1]&&c[i+2]){c[i]--;c[i+1]--;c[i+2]--;acc.push({k:'shun',t:i});rec(i);acc.pop();c[i]++;c[i+1]++;c[i+2]++;}
+    if(rest.length<4){c[i]--;rest.push(i);rec(i);rest.pop();c[i]++;}
+  })(0);
+  return [...rows.values()].sort((x,y)=>y.ws.length-x.ws.length||x.rest.length-y.rest.length);
+}
+function waitHowTo(){
+  const rows=waitBreakdown(Q.hand).slice(0,8);
+  const chi=sum(Q.hand)===13&&Q.hand.filter(n=>n===2).length===6&&Q.hand.filter(n=>n===1).length===1;
+  const body=rows.map(x=>`<div class="bdrow"><div class="split">${x.groups.map(g=>grp(groupTiles(g),g.k==='shun'?'順子':'刻子',false)).join('')}${grp(x.rest,'残り',true)}</div>
+    <p class="bdw">→ ${x.ws.map(w=>`<span class="bdt" style="--tw:22px">${tileHTML(w.t)}<small>${WAITNAME[w.s]}</small></span>`).join('')}</p></div>`).join('');
+  return `<div><h3>待ちの見つけ方</h3><ol class="proc">
+      <li>確実な<b>面子（順子・刻子）を抜いて</b>、残りを<b>1枚か4枚</b>にする</li>
+      <li><b>同じ牌3枚（暗刻）</b>は「面子のまま」と「雀頭＋1枚」の<b>2通り</b>で考える</li>
+      <li>残り1枚なら<b>単騎</b>。残り4枚なら「雀頭＋ターツ（両面・嵌張・辺張）」か「対子2つ（シャンポン）」</li>
+      <li>順子の端の牌は、残りの形と組み合わせて<b>スジ（3つ隣）</b>も待ちにならないか確認</li></ol></div>
+    <div><h3>この手の分け方（${rows.length}通り）</h3>${body}${chi?'<p class="sub">ほかに、対子6組＋1枚なので七対子の単騎もあります。</p>':''}</div>`;
 }
 function waitBody(){
   const ws=new Set(Q.waits);const wrong=[...Q.sel].filter(t=>!ws.has(t));
@@ -2530,6 +2843,7 @@ function waitBody(){
     return `<div class="waitrow"><div class="top">${tileHTML(w,{cls:'win'})}${st}<span class="tag">${info.shapes.map(s=>WAITNAME[s]).join('・')}${info.chiitoi?'（七対子）':''}</span></div><div class="split">${split}</div></div>`;
   }).join('');
   return `${wrong.length?`<p class="sub">選んだけれど待ちではない牌：${wrong.map(tLabel).join('・')}</p>`:''}
+    ${waitHowTo()}
     <div><h3>それぞれの和了形（橙の文字が和了牌を含む面子）</h3>${rows}</div>`;
 }
 
@@ -2539,7 +2853,8 @@ let preRead=null;
 function newRead(){
   const lv=levels.read,k=readKind;
   const q=(preRead&&preRead.lv===lv&&preRead.k===k)?preRead.q:genRead(lv,k);preRead=null;
-  Q={type:'read',...q,sel:null,done:false};drawRead();
+  const rv=takePending();
+  Q={type:'read',...(rv||q),sel:null,done:false,src:rv||q};drawRead();
   setTimeout(()=>{if(mode==='read'&&!preRead)preRead={lv,k,q:genRead(lv,k)};},400);
 }
 function riverHTML(river){
@@ -2562,8 +2877,8 @@ function drawRead(){
     </div>
 <!--CTRL-->
     <div class="kindrow"><div class="seg" role="group" aria-label="問題の種類"><button type="button" data-kind="hit" aria-pressed="${!safe}">当たりを探す</button><button type="button" data-kind="safe" aria-pressed="${safe}">安全牌を選ぶ</button></div></div>
-    <p class="hint">${READ_HINT[Q.kind][levels.read]}。グレーの牌は現物なので選べません。</p>
-    <div class="myhand"><span class="mylab">自分の手牌</span><div class="row" style="--n:14">${arr.map(t=>{
+    <p class="hint">${READ_HINT[Q.kind][levels.read]}</p>
+    <div class="myhand"><span class="mylab">自分の手牌（グレー＝現物で選べない）</span><div class="row" style="--n:14">${arr.map(t=>{
       const c=cs.has(t);let m='';
       if(c){if(d){if(t===Q.win)m='mk-ok';else if(t===Q.sel)m='mk-ng';}else if(t===Q.sel)m='on';}
       return `<button class="pick ${m} ${c?'':'off'}" type="button" data-t="${t}" aria-label="${tLabel(t)}" ${(!c||d)?'disabled':''}>${tileHTML(t)}</button>`;}).join('')}</div></div>`);
@@ -2571,7 +2886,10 @@ function drawRead(){
   if(!d){
     root.querySelectorAll('.myhand .pick:not(.off)').forEach(b=>b.onclick=()=>{const t=+b.dataset.t;Q.sel=Q.sel===t?null:t;drawRead();});
     setGo(Q.sel!=null?(safe?`${tLabel(Q.sel)} を切る`:`${tLabel(Q.sel)} が当たりと読む`):'候補の牌をタップ',Q.sel!=null,()=>{
-      Q.done=true;Q.ok=Q.sel===Q.win;record(Q.ok);drawRead();
+      Q.done=true;Q.ok=Q.sel===Q.win;record(Q.ok);
+      {const lab=t=>Q.infos&&Q.infos[t]?'r:'+String(Q.infos[t].label).replace(/（.*$/,''):null;const tg=[lab(Q.win)].filter(Boolean);
+       if(Q.ok)weakDecay(tg);else{weakAdd(tg.concat([lab(Q.sel)].filter(Boolean)));const src=Q.src;schedule(kd=>kd==='same'?{...src,_review:null,_weak:null}:null,false);}}
+      drawRead();
       const sum=safe?`一番安全なのは <b>${tLabel(Q.win)}</b>${waitSet.has(Q.sel)?`。${tLabel(Q.sel)}は<b>放銃</b>でした`:''}`
                     :`当たりは <b>${tLabel(Q.win)}</b>（相手の待ち：${Q.waits.map(tLabel).join('・')}）`;
       openEx(Q.ok,sum,readBody(),readPin());
@@ -2662,11 +2980,81 @@ function readBody(){
 
 // ===== 何切る =====
 const SHAN=s=>s===0?'聴牌':s+'向聴';
-function newKiru(){const q=genNanikiru(levels.kiru);Q={type:'kiru',...q,selI:null,done:false};drawKiru();}
+function kiruTags(q){const b=q.res[0];const t=['k:'+SHAN(b.s)];if(q.res.filter(x=>x.s===b.s&&x.cnt===b.cnt).length>1)t.push('k:同じ枚数の比較');return t;}
+function variantKiru(hand){for(const f of xformMaker()){const h=xCounts(hand,f);if(!isAgari(h))return{hand:h,res:analyzeDiscards(h)};}return null;}
+function newKiru(){
+  if(kiruKind==='uke')return newUke();
+  const lv=levels.kiru;const q=takePending()||biasedGen(()=>genNanikiru(lv),kiruTags);
+  Q={type:'kiru',...q,selI:null,done:false};drawKiru();
+}
+// 受け入れが同じ枚数の打牌どうしは「聴牌したときの待ちの広さ」で比べる（1向聴のときだけ）
+function tenpaiWidth(c14,x){
+  const c=c14.slice();c[x.t]--;let tot=0;
+  x.uke.forEach(u=>{
+    const rem=4-c14[u];if(rem<=0)return;c[u]++;let best=0;
+    for(let d=0;d<34;d++){if(!c[d])continue;c[d]--;if(shanten(c)===0){const ws=waitsOf(c.slice());const n=ws.reduce((a,w)=>a+Math.max(0,4-c[w]-(w===x.t?1:0)),0);if(n>best)best=n;}c[d]++;}
+    c[u]--;tot+=rem*best;
+  });
+  return x.cnt?tot/x.cnt:0;
+}
+function kiruTie(){
+  const b=Q.res[0],ties=Q.res.filter(x=>x.s===b.s&&x.cnt===b.cnt);
+  if(ties.length<2||b.s!==1)return null;
+  const w=ties.map(x=>({t:x.t,w:tenpaiWidth(Q.hand,x)}));
+  const mx=Math.max(...w.map(x=>x.w));
+  if(w.every(x=>Math.abs(x.w-mx)<1e-9))return{w,top:w.map(x=>x.t),even:true};
+  return{w,top:w.filter(x=>Math.abs(x.w-mx)<1e-9).map(x=>x.t)};
+}
+// ---- 有効牌当て ----
+function genUkeQ(lv){const q=genNanikiru(lv);if(!q)return null;const b=q.res[0];const c13=q.hand.slice();c13[b.t]--;return{hand13:c13,c14:q.hand,cut:b.t,uke:b.uke,cnt:b.cnt,s:b.s};}
+function variantUke(src){for(const f of xformMaker()){const h=xCounts(src.c14,f);if(isAgari(h))continue;const res=analyzeDiscards(h);const t=f(src.cut);const x=res.find(r=>r.t===t);if(!x)continue;const c13=h.slice();c13[t]--;return{hand13:c13,c14:h,cut:t,uke:x.uke,cnt:x.cnt,s:x.s};}return null;}
+function newUke(){
+  const lv=levels.kiru;const q=takePending()||biasedGen(()=>genUkeQ(lv),q=>['u:'+SHAN(q.s)]);
+  Q={type:'uke',...q,sel:new Set(),done:false};drawUke();
+}
+function kindSegKiru(){return `<div class="kindrow"><div class="seg" role="group" aria-label="問題の種類"><button type="button" data-kk="cut" aria-pressed="${kiruKind==='cut'}">何を切る？</button><button type="button" data-kk="uke" aria-pressed="${kiruKind==='uke'}">有効牌はどれ？</button></div></div>`;}
+function bindKindKiru(){root.querySelectorAll('[data-kk]').forEach(b=>b.onclick=()=>{if(kiruKind===b.dataset.kk)return;kiruKind=b.dataset.kk;LS.set('kiruKind',kiruKind);next();});}
+function drawUke(){
+  const d=Q.done,us=new Set(Q.uke),arr=toArr(Q.hand13);
+  const rows=[];for(let s=0;s<3;s++)if(Q.hand13.slice(s*9,s*9+9).some(n=>n))rows.push(range(s*9,s*9+9));
+  const hon=range(27,34).filter(t=>Q.hand13[t]);if(hon.length)rows.push(hon);
+  const candH=rows.map(row=>`<div class="crow">${row.map(t=>{
+    let m='';if(d){if(us.has(t)&&Q.sel.has(t))m='mk-ok';else if(us.has(t))m='mk-miss';else if(Q.sel.has(t))m='mk-ng';}else if(Q.sel.has(t))m='on';
+    const dead=Q.c14[t]>=4;
+    return `<button class="pick ${m} ${dead?'off':''}" type="button" data-t="${t}" aria-pressed="${Q.sel.has(t)}" aria-label="${tLabel(t)}" ${d||dead?'disabled':''}>${tileHTML(t)}</button>`;}).join('')}</div>`).join('');
+  render(`
+    ${kindSegKiru()}
+    <div class="qhead"><p class="prompt">引くと前に進む牌をすべて選ぶ</p>${stHTML()}</div>
+    <div class="felt"><div class="row" style="--n:13.6">${tiles(arr)}</div></div>
+<!--CTRL-->
+    <p class="hint"><b>${SHAN(Q.s)}</b>（${tLabel(Q.cut)}を切った後）：${Q.s===0?'アガリ牌':'向聴数が減る牌'}をすべて選ぶ</p>
+    <div class="cand">${candH}</div>`);
+  bindKindKiru();
+  if(!d){
+    root.querySelectorAll('.cand .pick:not(.off)').forEach(b=>b.onclick=()=>{const t=+b.dataset.t;Q.sel.has(t)?Q.sel.delete(t):Q.sel.add(t);drawUke();});
+    setGo(Q.sel.size?`答え合わせ（${Q.sel.size}種）`:'有効牌をタップ',Q.sel.size>0,()=>{
+      Q.done=true;Q.ok=Q.sel.size===us.size&&[...Q.sel].every(t=>us.has(t));record(Q.ok);
+      const tg=['u:'+SHAN(Q.s)];if(Q.ok)weakDecay(tg);else{weakAdd(tg);const src={hand13:Q.hand13,c14:Q.c14,cut:Q.cut,uke:Q.uke,cnt:Q.cnt,s:Q.s};schedule(kd=>kd==='same'?src:variantUke(src));}
+      drawUke();
+      openEx(Q.ok,`有効牌は <b>${Q.uke.length}種 ${Q.cnt}枚</b>`,ukeBody(),`<div class="row" style="--n:13.6">${tiles(arr)}</div>`);
+    });
+  }else setGo('次の問題',true,next);
+}
+function ukeBody(){
+  const us=new Set(Q.uke),miss=Q.uke.filter(t=>!Q.sel.has(t)),wrong=[...Q.sel].filter(t=>!us.has(t));
+  const c=Q.hand13.slice();
+  const rows=Q.uke.map(u=>{c[u]++;const s2=shanten(c);c[u]--;const rem=4-Q.c14[u];
+    return `<tr class="${Q.sel.has(u)?'':'mine'}"><td style="--tw:22px">${tileHTML(u)}</td><td class="num">${rem}枚</td><td>${s2===-1?'アガリ':SHAN(s2)}</td><td>${Q.sel.has(u)?'○':'見逃し'}</td></tr>`;}).join('');
+  return `${wrong.length?`<p class="sub">${wrong.map(tLabel).join('・')} は引いても${SHAN(Q.s)}のまま（前に進まない）。</p>`:''}
+    ${miss.length?`<p class="sub">見逃し：${miss.map(tLabel).join('・')}。手の中の<b>ターツの外側・内側</b>と、<b>浮いている牌のくっつき</b>を順に確認しましょう。</p>`:''}
+    <div><h3>有効牌の一覧（合計 ${Q.cnt}枚）</h3><div class="scroll"><table><tr><th>牌</th><th class="num">残り</th><th>引いた後</th><th></th></tr>${rows}</table></div></div>
+    <p class="sub">残り枚数は、自分の手牌（切った牌も含む）に見えている分を引いた数です。</p>`;
+}
 function drawKiru(){
   const d=Q.done;const arr=toArr(Q.hand);const best=Q.res[0];
   const best0=best.s===0;
   render(`
+    ${kindSegKiru()}
     <div class="qhead"><p class="prompt">何を切る？</p>${stHTML()}</div>
     <p class="hint">${best0?'聴牌に取れる打牌のうち、<b>待ちの枚数が一番多い</b>ものを選びます。':`いまは<b>${best.s}向聴</b>。向聴数を戻さず、<b>受け入れが一番広い</b>打牌を選びます。`}</p>
     <div class="preview">${Q.selI!=null&&!d?`<span>切る牌</span>${tileHTML(arr[Q.selI])}`:d?`<span>あなたの打牌</span>${tileHTML(Q.sel)}`:'<span class="sub">下の手牌から切る牌をタップ</span>'}</div>
@@ -2676,13 +3064,18 @@ function drawKiru(){
       if(d){const r=Q.res.find(x=>x.t===t);const isB=r.s===best.s&&r.cnt===best.cnt;m=isB?'mk-ok':(Q.selI===i?'mk-ng':'');}
       return `<button class="pick ${m}" type="button" data-i="${i}" aria-label="${tLabel(t)}" ${d?'disabled':''}>${tileHTML(t)}</button>`;}).join('')}</div></div>
     <p class="hint">${d?'緑の枠が正解の打牌です。':'切る牌をタップすると持ち上がります。'}</p>`);
+  bindKindKiru();
   if(!d){
     root.querySelectorAll('#ctrl .felt .pick').forEach(b=>b.onclick=()=>{const i=+b.dataset.i;Q.selI=Q.selI===i?null:i;drawKiru();});
     const sel=Q.selI!=null?arr[Q.selI]:null;
     setGo(sel!=null?`${tLabel(sel)} を切る`:'切る牌をタップ',sel!=null,()=>{
-      Q.sel=sel;Q.done=true;const mine=Q.res.find(x=>x.t===sel);Q.ok=mine.s===best.s&&mine.cnt===best.cnt;record(Q.ok);drawKiru();
+      Q.sel=sel;Q.done=true;const mine=Q.res.find(x=>x.t===sel);Q.ok=mine.s===best.s&&mine.cnt===best.cnt;record(Q.ok);
+      Q.tie=kiruTie();
+      {const tg=kiruTags(Q);if(Q.ok)weakDecay(tg);else{weakAdd(tg.concat(mine.s>best.s?['k:向聴を戻した']:['k:受け入れの比較']));const src={hand:Q.hand.slice(),res:Q.res};schedule(kd=>kd==='same'?src:variantKiru(src.hand));}}
+      drawKiru();
       const bests=Q.res.filter(x=>x.s===best.s&&x.cnt===best.cnt).map(x=>tLabel(x.t));
-      openEx(Q.ok,`正解は <b>${bests.join('・')}</b> 切り（${SHAN(best.s)}・${best.cnt}枚）`,kiruBody(),kiruPin());
+      const tieNote=Q.tie&&!Q.tie.even?(Q.tie.top.includes(sel)?'　◎聴牌したときの待ちも広い方':Q.ok?`　△同じ枚数。待ちの広さなら <b>${Q.tie.top.map(tLabel).join('・')}</b>`:''):'';
+      openEx(Q.ok,`正解は <b>${bests.join('・')}</b> 切り（${SHAN(best.s)}・${best.cnt}枚）${tieNote}`,kiruBody(),kiruPin());
     });
   }else setGo('次の問題',true,next);
 }
@@ -2700,6 +3093,9 @@ function kiruBody(){
   return `${!Q.ok?`<p class="sub">${tLabel(mine.t)}切りは${mine.s>best.s?'向聴数が戻ってしまいます。':`受け入れ ${mine.cnt}枚で、正解より ${best.cnt-mine.cnt}枚少なくなります。`}</p>`:''}
     <div><h3>打牌ごとの受け入れ（緑＝最善、橙の線＝あなたの選択）</h3><div class="scroll"><table>
     <tr><th>打牌</th><th class="num">切った後</th><th class="num">受入</th><th>有効牌</th></tr>${rows}</table></div></div>
+    ${Q.tie?`<div><h3>同じ枚数のときの決め手</h3><p>受け入れ枚数が同じときは、<b>引いて聴牌したときの待ちの広さ</b>で比べます（有効牌それぞれで聴牌したときの、待ちの残り枚数の平均）。</p>
+      <div class="scroll"><table><tr><th>打牌</th><th class="num">聴牌時の待ち（平均）</th></tr>${Q.tie.w.map(x=>`<tr class="${Q.tie.top.includes(x.t)&&!Q.tie.even?'best':''} ${x.t===Q.sel?'mine':''}"><td style="--tw:22px">${tileHTML(x.t)}</td><td class="num">${x.w.toFixed(1)}枚</td></tr>`).join('')}</table></div>
+      ${Q.tie.even?'<p class="sub">この手は待ちの広さも同じなので、どちらを切っても互角です。</p>':''}</div>`:''}
     <p class="sub">牌の効率だけで判定しています。役・打点・安全度は考えていません。</p>`;
 }
 
@@ -2766,17 +3162,24 @@ const LVINFO={
   read:['当たり：スジ・字牌の中に無スジの当たりが1枚／安全牌：無スジの中にスジ・字牌が1枚','壁・ワンチャンス・片スジ・中スジまで使う','当たり：またぎスジ・裏スジで絞り込む／安全牌：安全度の近い候補を比べる'],
   kiru:['切れば聴牌。正解がはっきりした問題','1向聴まで。正解は1〜2種類','1〜2向聴で、受け入れ差が小さい問題']
 };
+function weakListHTML(){
+  const g=weak[wGroup()]||{},ks=Object.keys(g).sort((a,b)=>g[b]-g[a]).slice(0,12);
+  const nm={score:'点数計算',tenpai:'聴牌形',shibu:'渋川式',wait:'自分の待ち',read:'相手の待ち',kirucut:'何切る',kiruuke:'有効牌'}[wGroup()];
+  return `<div class="lvinfo"><h3 class="sub" style="font-weight:700">苦手リスト（${nm}）</h3>${ks.length?ks.map(k=>`<div class="wk"><span>${tagLabel(k)}</span><i style="width:${Math.min(100,g[k]*14)}%"></i></div>`).join('')+`<p class="sub">間違えた項目ほど上に出ます。正解すると少しずつ減り、苦手を含む問題が多めに出ます。</p><button class="primary ghost" type="button" id="wrst">苦手リストを消す</button>`:'<p class="sub">まだありません。間違えた項目がここにたまり、その項目を含む問題が多めに出ます。</p>'}</div>`;
+}
 let resetArm=false;
 function openSettings(){
   resetArm=false;
   const draw=()=>{
     panel.innerHTML=`<h2>設定</h2>
       <div class="lvinfo"><h3 class="sub" style="font-weight:700">レベルの目安（${({score:'点数計算',wait:'自分の待ち',read:'相手の待ち',kiru:'何切る'})[mode]}）</h3>${LVINFO[mode].map((t,i)=>`<div><b>${LVN[i+1]}</b><span>${t}</span></div>`).join('')}</div>
+      ${weakListHTML()}
       ${SETS.map(([k,n,dsc,ops])=>`<div class="set"><div><p>${n}</p><small>${dsc}</small></div><div class="seg">${ops.map(([l,v],i)=>`<button type="button" data-k="${k}" data-i="${i}" aria-pressed="${rules[k]===v}">${l}</button>`).join('')}</div></div>`).join('')}
       <button class="primary" type="button" id="cls">閉じて次の問題へ</button>
       <button class="primary ghost" type="button" id="rst">${resetArm?'もう一度押すと全成績を消します':'成績をリセット'}</button>`;
     panel.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{const s=SETS.find(x=>x[0]===b.dataset.k);rules[s[0]]=s[3][+b.dataset.i][1];LS.set('rules',rules);if(s[0]==='kiriage')shared.setKiriage(rules.kiriage);draw();});
     $('#cls').onclick=()=>{closeSheet();next();};
+    const wr=$('#wrst');if(wr)wr.onclick=()=>{delete weak[wGroup()];saveWeak();draw();};
     $('#rst').onclick=()=>{if(!resetArm){resetArm=true;draw();return;}stats={};LS.set('stats2',stats);resetArm=false;const e=$('#st');if(e)e.outerHTML=stHTML();$('#rst').textContent='リセットしました';};
   };
   sheet.hidden=false;draw();
