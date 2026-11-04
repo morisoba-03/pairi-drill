@@ -540,6 +540,13 @@ button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
 .aiq{display:flex;gap:6px}
 .act .aiact{flex:none;width:58px;padding:0;font-size:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05}
 .act .aiact small{font-size:10px;font-weight:700}
+.bq-step{font-family:var(--f-disp);font-size:30px;font-weight:800;color:var(--face)}
+.bq-step small{font-size:16px;margin-left:2px}
+.sbs td small.sbf{white-space:normal}
+.sbs td.hi{background:var(--sel);color:var(--sel-ink);font-weight:800}
+.lq{border:1px solid var(--line);border-radius:10px;padding:6px 10px;margin:6px 0}
+.lq summary{font-weight:700;cursor:pointer}
+.lq div{margin-top:6px}
 .sumtiles{display:inline-flex;gap:1px;vertical-align:middle;--tw:20px}
 .pinwait{display:flex;align-items:center;gap:8px;margin-top:6px}
 .pinwait>span{flex:none;font-size:11px;font-weight:700;color:var(--felt-ink)}
@@ -1548,11 +1555,12 @@ const BUILD={
   wait:(x,k)=>k==='same'?{hand:x.hand.slice(),waits:waitsOf(x.hand.slice())}:variantWait(x.hand),
   kiru:(x,k)=>k==='same'?{hand:x.hand.slice(),res:analyzeDiscards(x.hand)}:variantKiru(x.hand),
   uke:(x,k)=>{if(k!=='same')return variantUke({c14:x.c14,cut:x.cut});const res=analyzeDiscards(x.c14),y=res.find(r=>r.t===x.cut);if(!y)return null;const c13=x.c14.slice();c13[x.cut]--;return{hand13:c13,c14:x.c14.slice(),cut:x.cut,uke:y.uke,cnt:y.cnt,s:y.s};},
-  read:(x,k)=>k==='same'?JSON.parse(JSON.stringify(x.q)):null
+  read:(x,k)=>k==='same'?JSON.parse(JSON.stringify(x.q)):null,
+  scard:(x,k)=>{const c=x.sc;if(k==='same')return{sc:c};const cs=sbsCards().filter(y=>y.id!==c.id&&y.p===c.p&&y.d===c.d&&(y.n===c.n||y.h===c.h));return{sc:cs.length?pick(cs):c};}
 };
 function noteList(){return notes[wGroup()]||(notes[wGroup()]=[]);}
 function noteMiss(type,src){
-  if(!train)schedule(k=>BUILD[type](stripSrc(src),k),type!=='read',['card','steps','total'].includes(type)?type:undefined);
+  if(!train)schedule(k=>BUILD[type](stripSrc(src),k),type!=='read',['card','steps','total','scard'].includes(type)?type:undefined);
   const g=noteList();
   if(Q&&Q._note){const n=g.find(x=>x.id===Q._note);if(n){n.ok=0;saveNotes();return;}}
   try{g.push({id:Date.now().toString(36)+ri(1e6).toString(36),type,src:stripSrc(src),ok:0});}catch(e){return;}
@@ -1576,7 +1584,7 @@ function trainPick(type){
   if(!q){all.splice(all.indexOf(n),1);saveNotes();return null;}
   q._note=n.id;q._review=kind;lastNote=n.id;return q;
 }
-function getQ(type){return train?trainPick(type):takePending(['card','steps','total'].includes(type)?type:undefined);}
+function getQ(type){return train?trainPick(type):takePending(['card','steps','total','scard'].includes(type)?type:undefined);}
 function trainBadge(){
   const n=noteList().length,hasW=Object.keys(weak[wGroup()]||{}).length;
   const lab=Q&&Q._review?(Q._review==='same'?'前の問題':'類題'):Q&&Q._weak?Q._weak.slice(2):n?'新問':hasW?'苦手項目':'苦手なし';
@@ -1914,18 +1922,21 @@ function courseSeg(){
   return bar+`<div class="menubody">`
     +(!sb?`<div class="crs"><span class="mlab">出題</span><div class="seg" role="group" aria-label="出題の形"><button type="button" data-skind="agari" aria-pressed="${scoreKind==='agari'}">アガリ形</button><button type="button" data-skind="tenpai" aria-pressed="${scoreKind==='tenpai'}">聴牌形（何を引いたら何点）</button></div></div>`:'')
     +(sb?`<div class="stg">${[1,2,3,4,5,6,7].map(i=>`<button type="button" class="${i===7?'mx':''}" data-stage="${i}" aria-pressed="${shibu.stage===i}">${i===7?'🔀':shibu.cl[i]?'✓':i}<small>${SB_STAGES[i].s}</small></button>`).join('')}</div>`
+      +(shibu.stage===5?`<div class="ykset"><span>出題</span><div class="seg" role="group" aria-label="ステップ5の出題">${[['hand','手牌で段階'],['card','段階の点数'],['mix','混ぜる']].map(([v,l])=>`<button type="button" data-s5="${v}" aria-pressed="${(shibu.s5||'mix')===v}">${l}</button>`).join('')}</div></div>`:'')
       +((shibu.stage<=4||(shibu.stage===7&&shibu.mix.some(i=>i<=4)))?`<div class="ykset"><span>翻の出し方${shibu.stage===7?'（ステップ1〜4）':''}</span><div class="seg" role="group" aria-label="翻の出し方">${[['han','翻数'],['yaku','役名'],['mix','混ぜる']].map(([v,l])=>`<button type="button" data-disp="${v}" aria-pressed="${(shibu.disp||'han')===v}">${l}</button>`).join('')}</div></div>`:'')
       +(shibu.stage===7?`<div class="mixsel"><span>出題</span>${[1,2,3,4,5,6].map(i=>`<button type="button" data-mix="${i}" aria-pressed="${shibu.mix.includes(i)}" aria-label="ステップ${i} ${SB_STAGES[i].n}">${i}<small>${SB_STAGES[i].s}</small></button>`).join('')}</div>`:''):'')
     +'</div>';
 }
 function setMenu(o){menuOpen=o;LS.set('menuOpen',o);}
 // メニューの開閉だけなら、問題は作り直さずに今の画面を描き直す
-function redrawQ(){if(!Q)return next();if(Q.sb==='card')sbDrawCard();else if(Q.sb==='steps')sbDrawSteps();else if(Q.sb==='total')sbDrawTotal();else if(Q.type==='tenpai')drawTenpai();else if(mode==='score')drawScore();else next();}
+function redrawQ(){if(!Q)return next();if(Q.sb==='card')sbDrawCard();else if(Q.sb==='scard')sbDrawStepCard();else if(Q.sb==='steps')sbDrawSteps();else if(Q.sb==='total')sbDrawTotal();else if(Q.type==='tenpai')drawTenpai();else if(mode==='score')drawScore();else next();}
 function bindCourse(){
   root.querySelectorAll('[data-menu]').forEach(b=>b.onclick=()=>{setMenu(!menuOpen);redrawQ();});
   root.querySelectorAll('[data-course]').forEach(b=>b.onclick=()=>{if(course===b.dataset.course)return;course=b.dataset.course;LS.set('course',course);if(course==='normal')setMenu(false);next();});
   root.querySelectorAll('[data-stage]').forEach(b=>b.onclick=()=>{shibu.stage=+b.dataset.stage;saveSb();if(shibu.stage!==7)setMenu(false);next();});
+  root.querySelectorAll('#ctrl [data-sguide]').forEach(b=>b.onclick=openStepGuide);
   root.querySelectorAll('[data-skind]').forEach(b=>b.onclick=()=>{if(scoreKind===b.dataset.skind)return;scoreKind=b.dataset.skind;LS.set('scoreKind',scoreKind);setMenu(false);next();});
+  root.querySelectorAll('[data-s5]').forEach(b=>b.onclick=()=>{if((shibu.s5||'mix')===b.dataset.s5)return;shibu.s5=b.dataset.s5;saveSb();next();});
   root.querySelectorAll('[data-disp]').forEach(b=>b.onclick=()=>{if((shibu.disp||'han')===b.dataset.disp)return;shibu.disp=b.dataset.disp;saveSb();next();});
   root.querySelectorAll('[data-lesson]').forEach(b=>b.onclick=()=>openTutorial(shibu.stage===7?sbCur:shibu.stage));
   root.querySelectorAll('[data-ref]').forEach(b=>b.onclick=openRef);
@@ -2104,9 +2115,12 @@ function sbStepsExplain(Q2){
     <p>この手は ${x}符 → <b>${st}段階</b>上げて <b>${r.fu}符</b>で計算します。</p>
     ${r.fu<=60&&r.han<=4&&sbPos(p,r.han)>=0?`<p>はしごで見ると、${SB_PAT[p].n}・${r.han}翻の位置から<b>${st}つ右</b>：</p>${sbLadderHTML(ctx.dealer,ctx.tsumo,{from:sbPos(p,r.han),to:Math.min(sbPos(p,r.han)+st,sbLadder(ctx.dealer,ctx.tsumo).length-1)})}`:''}
     <p class="sub">まず見るところ：カンがあるか、1・9・字牌の暗刻があるか。どちらもなければ、ほとんど段階は上がりません。</p>
-    ${st?`<p class="sub">覚え方：50符は「25符（七対子）の表を1翻上」、60符は「30符の表を1翻上」で読めます。</p>`:''}</div>`;
+    ${r.han<=4&&r.fu<=60?`<p>点数：${r.fu}符は「<b>${sbsBorrow(r.fu,ctx.tsumo)}</b>」→ ${r.han}翻で <b>${r.pay.text}</b></p>${SBS_BASE[p]?sbsTable(p,ctx.dealer,{n:st,h:r.han}):''}`:''}
+    <p><button type="button" class="backstep" data-sguide>📘 段階の覚え方をくわしく</button></p></div>`;
 }
 function sbNewSteps(){
+  const m=shibu.s5||'mix';
+  if(m==='card'||(m==='mix'&&Math.random()<0.5))return sbNewStepCard();
   const q=getQ('steps')||biasedGen(()=>sbGenHand(5),q=>scoreTagsBy(q.ctx,q.r).f);if(!q){sbCur=4;return sbNewCard();}
   const st=Math.max(0,(q.r.fu-SB_PAT[q.p].fu)/10);
   Q={type:'score',sb:'steps',...q,ans:Math.min(3,st),sel:null,done:false};sbDrawSteps();
@@ -2117,18 +2131,152 @@ function sbDrawSteps(){
     <div class="qhead"><p class="prompt">符で何段階上がる？</p>${stHTML()}</div>
     <div class="felt"><div class="chips"><span class="chip em">${SB_PAT[p].n}（${SB_PAT[p].fu}符の表）</span><span class="chip">${KAZE[ctx.bakaze-27]}場</span><span class="chip">${KAZE[ctx.jikaze-27]}家</span></div>${handScoreHTML(ctx)}</div>
 <!--CTRL-->
-    <p class="hint">刻子・槓子・待ち・雀頭・ツモの符を足します。12符で1段階、22符で2段階</p>
+    <div class="hintrow"><button type="button" class="backstep" data-sguide>📘 覚え方</button><p class="hint">12符で1段・22符で2段</p></div>
     <div class="pad c4">${[0,1,2,3].map(n=>{let k='';if(d){if(n===Q.ans)k='ok';else if(n===Q.sel)k='ng';}
       return `<button class="key ${k}" type="button" data-v="${n}" aria-pressed="${Q.sel===n}" ${d?'disabled':''}>${n===3?'3〜':n}<small>段階</small></button>`;}).join('')}</div>`);
   bindCourse();
   if(!d){root.querySelectorAll('.pad .key').forEach(b=>b.onclick=()=>{Q.sel=+b.dataset.v;Q.done=true;Q.ok=Q.sel===Q.ans;record(Q.ok);
       {const tg=scoreTagsBy(Q.ctx,Q.r).f;if(Q.ok)weakDecay(tg);else{weakAdd(tg);noteMiss('steps',{ctx:Q.ctx});}}const msg=sbProgress(Q.ok);sbDrawSteps();
-      openEx(Q.ok,`<b>${Q.ans}段階</b>（${Q.r.fu}符）・${Q.r.han}翻 → ${Q.r.pay.text}${msg}`,sbStepsExplain(Q)+`<div><h3>手の分け方</h3><div class="split">${sbSplit(Q.r,Q.ctx.win)}</div></div>`,handScoreHTML(Q.ctx));});
+      setTimeout(()=>root.querySelectorAll('#exB [data-sguide]').forEach(b=>b.onclick=openStepGuide),0);openEx(Q.ok,`<b>${Q.ans}段階</b>（${Q.r.fu}符）・${Q.r.han}翻 → ${Q.r.pay.text}${msg}`,sbStepsExplain(Q)+`<div><h3>手の分け方</h3><div class="split">${sbSplit(Q.r,Q.ctx.win)}</div></div>`,handScoreHTML(Q.ctx));});
     setGo('答えをタップ',false,null);}
   else setGo('次の問題',true,next);
 }
 // 複数の答えを順に入れる問題の「戻る」ボタン
 const backBtn=on=>on?'<button type="button" class="backstep" data-back>← 戻る</button>':'';
+
+// ===== 段階の覚え方（ステップ5を「すっと出る」ようにするための解説と、段階つき点数カード） =====
+// 段階で上がった符ごとに「借りる表」を決めておく：40符＝門前ロンの表（ツモは平和ツモの表を1翻上）、50符＝七対子の表を1翻上、60符＝30符の表を1翻上
+const SBS_BASE={nakiron:30,tsumo:30,menron:40};
+function sbsBorrow(fu,ts){
+  if(fu===30)return ts?'ツモの表':'鳴いてロンの表';
+  if(fu===40)return ts?'平和ツモの表を1翻ずらす':'門前ロンの表';
+  if(fu===50)return ts?'七対子ツモの表を1翻ずらす':'七対子ロンの表を1翻ずらす';
+  if(fu===60)return ts?'ツモの表を1翻ずらす':'鳴いてロンの表を1翻ずらす';
+  return 'まれな符（70符以上）';
+}
+const sbsCell=t=>t.replace('・','・<wbr>').replace('オール','<wbr>オール');
+// 基準の表ごとに「段階×翻」の表をつくる
+function sbsTable(p,d,hl){
+  const ts=p==='tsumo',B=SBS_BASE[p],maxN=p==='menron'?2:3;
+  const rows=[];
+  for(let n=0;n<=maxN;n++){
+    const fu=B+10*n;
+    rows.push(`<tr><td><b>${n}段</b><small class="sbf">${fu}符＝${sbsBorrow(fu,ts)}</small></td>${[1,2,3,4].map(h=>{
+      const pt=payText(h,fu,d,ts,rules),c=hl&&hl.n===n&&hl.h===h?'hi':'';
+      return `<td class="num ${c}">${pt.limit?'満貫':sbsCell(pt.text)}</td>`;}).join('')}</tr>`);
+  }
+  return `<div class="scroll"><table class="sbt sbs"><tr><th>${SB_PAT[p].n}（${d?'親':'子'}）</th>${[1,2,3,4].map(h=>`<th class="num">${h}翻</th>`).join('')}</tr>${rows.join('')}</table></div>`;
+}
+function sbStepGuide(){
+  const k=rules.kiriage;
+  const ex=(t,a)=>`<details class="lq"><summary>${t}</summary><div>${a}</div></details>`;
+  return `<h2>📘 段階の覚え方</h2><div class="sbh lesson">
+  <div class="lgoal"><b>この解説で身につけること</b>手牌を見て「何段上がるか」と「上がったら何点か」が、計算せずにすっと出る</div>
+  <section><h3>まず結論（3行だけ覚える）</h3>
+    <div class="lbox"><b>① 材料が 12符で1段、22符で2段</b><br><b>② 大きい材料（8・16・32）を先に見る</b><br><b>③ 上がった先は「知っている表」を借りる</b></div></section>
+  <section><h3>なぜ12と22なの？</h3>
+    <p>覚えた表（30符・40符）には、もともと<b>小さな材料10符ぶんまでが込み</b>になっています。符は10符単位に<b>切り上げ</b>なので、</p>
+    ${LZ.flow(['材料 2〜10<br>→ <b>表のまま</b>','12〜20<br>→ <b>1段上</b>','22〜30<br>→ <b>2段上</b>','32〜<br>→ <b>3段上</b>'])}
+    <p class="sub">材料はどれも2の倍数なので、境目は「10を超えた最初の数」＝12・22・32になります。</p></section>
+  <section><h3>材料は「大」と「小」に分けて見る</h3>
+    <table class="lt"><tr><th>大きい材料</th><th class="num">符</th></tr>
+      <tr><td>1・9・字牌の<b>暗刻</b></td><td class="num"><b>8</b></td></tr>
+      <tr><td>2〜8の<b>暗槓</b>／1・9・字牌の<b>明槓</b></td><td class="num"><b>16</b></td></tr>
+      <tr><td>1・9・字牌の<b>暗槓</b></td><td class="num"><b>32</b></td></tr>
+      <tr><td>2〜8の<b>明槓</b></td><td class="num">8</td></tr></table>
+    <table class="lt"><tr><th>小さい材料</th><th class="num">符</th></tr>
+      <tr><td>2〜8の暗刻／1・9・字牌のポン</td><td class="num">4</td></tr>
+      <tr><td>2〜8のポン・嵌張/辺張/単騎待ち・役牌の雀頭・ツモ</td><td class="num">2</td></tr></table>
+    <p class="sub">覚え方：基本は2。<b>1・9・字なら×2、暗刻なら×2、カンなら×4</b>。ロンで完成した刻子はポン扱い。</p></section>
+  <section><h3>一瞬で判断する目安（計算しない）</h3>
+    <table class="lt"><tr><th>見えたもの</th><th>段階</th></tr>
+      <tr><td><b>暗槓</b>がある</td><td><b>1段以上</b>確定（1・9・字なら<b>3段</b>）</td></tr>
+      <tr><td>1・9・字の<b>明槓</b></td><td><b>1段</b>確定</td></tr>
+      <tr><td>1・9・字の<b>暗刻が2つ</b>（8＋8）</td><td><b>1段</b>確定。さらに小さい材料3つ（＋6）で<b>2段</b></td></tr>
+      <tr><td>1・9・字の<b>暗刻が1つ</b>（8）</td><td>あと<b>4</b>で1段 → 小さい材料<b>2つ</b>、または2〜8の暗刻1つ</td></tr>
+      <tr><td>2〜8の暗刻・ポンだけ</td><td>ほぼ<b>0段</b>（2〜8の暗刻が<b>3つ</b>で12＝1段）</td></tr>
+      <tr><td>小さい材料（2）だけ</td><td><b>6つ</b>そろわないと上がらない → まず0段</td></tr></table>
+    <div class="lbox">合言葉：<b>「8があったら、あと4」「8が2つで1段」「カンを見たら必ず上がる」</b></div>
+    <p class="sub">ツモの2符を忘れやすいので、ツモのときは最初に「＋2」を持っておくと楽です。</p></section>
+  <section><h3>上がった先の点数＝知っている表を借りる</h3>
+    <p>段階を足すと、符は <b>鳴いてロン・ツモ：30→40→50→60</b>、<b>門前ロン：40→50→60</b> と上がります。上がった符ごとに、借りる表は決まっています。</p>
+    <table class="lt"><tr><th>上がった符</th><th>ロン</th><th>ツモ</th></tr>
+      <tr><td><b>40符</b></td><td><b>門前ロンの表</b>そのまま</td><td><b>平和ツモの表を1翻ずらす</b></td></tr>
+      <tr><td><b>50符</b></td><td colspan="2"><b>七対子の表を1翻ずらす</b></td></tr>
+      <tr><td><b>60符</b></td><td colspan="2"><b>もとの30符の表を1翻ずらす</b></td></tr></table>
+    <div class="lbox">「1翻ずらす」＝表を1つ右（1翻多い所）で読む。<br>理由：<b>符が2倍になると、翻が1つ増えたのと同じ点数</b>（20→40、25→50、30→60）。</div>
+    <p class="sub">例：鳴いてロン2翻が2段上がる → 50符 → 七対子の表の3翻 → <b>${payText(2,50,false,false,rules).text}</b></p></section>
+  <section><h3>段階つきの表（子）</h3>
+    ${sbsTable('nakiron',false)}${sbsTable('tsumo',false)}${sbsTable('menron',false)}
+    <p class="sub">縦に見ると「段が1つ上がるごとに、となりの知っている表」。${k?'切り上げ満貫ありなので、60符3翻・30符4翻は満貫です。':''}</p></section>
+  <section><h3>親のとき</h3>${sbsTable('nakiron',true)}${sbsTable('tsumo',true)}${sbsTable('menron',true)}
+    <p class="sub">親も同じ借り方。子の点数を出してから、ステップ4のやり方（ロン約1.5倍・ツモは右側をオール）で置きかえてもOK。</p></section>
+  <section><h3>確認問題（タップで答え）</h3>
+    ${ex('子・ツモ・2翻。手に「中の暗刻」とカンチャン待ち','中の暗刻8＋カンチャン2＋ツモ2＝12 → <b>1段</b> → 40符 → 平和ツモの表を1翻ずらす（3翻の所）→ <b>'+payText(2,40,false,true,rules).text+'</b>')}
+    ${ex('子・鳴いてロン・1翻。「1萬の暗刻」と「9筒の暗刻」','8＋8＝16 → <b>1段</b> → 40符 → 門前ロンの表の1翻 → <b>'+payText(1,40,false,false,rules).text+'</b>')}
+    ${ex('子・門前ロン・2翻。「5索の暗槓」','暗槓（2〜8）16 → <b>1段</b> → 50符 → 七対子の表を1翻ずらす（3翻の所）→ <b>'+payText(2,50,false,false,rules).text+'</b>')}
+    ${ex('子・鳴いてロン・2翻。「東の暗槓」（場風でも自風でもない）','1・9・字の暗槓32 → <b>3段</b> → 60符 → 鳴いてロンの表を1翻ずらす（3翻の所）→ <b>'+payText(2,60,false,false,rules).text+'</b>')}
+  </section></div>`;
+}
+function openStepGuide(){openSheet(sbStepGuide()+`<button class="primary" type="button" id="cls">閉じる</button>`,()=>{$('#cls').onclick=closeSheet;});}
+// ---- 段階つき点数カード ----
+function sbsCards(){
+  const out=[];
+  ['nakiron','tsumo','menron'].forEach(p=>[1,2,3].forEach(h=>[false,true].forEach(d=>[1,2,3].forEach(n=>{
+    if(p==='menron'&&n>2)return;
+    const fu=SBS_BASE[p]+10*n;
+    out.push({p,h,d,n,fu,id:`s5-${p}${h}${d?'o':'k'}${n}`,w:(n===1?1:n===2?.6:.3)*(d?.6:1)});
+  }))));
+  return out;
+}
+function sbsPick(){
+  const cs=sbsCards(),last=Q&&Q.sc?Q.sc.id:null;
+  const ws=cs.map(c=>c.id===last?0:c.w*(shibu.w[c.id]||1));
+  let r=Math.random()*ws.reduce((a,b)=>a+b,0);
+  for(let i=0;i<cs.length;i++){r-=ws[i];if(r<=0)return cs[i];}
+  return cs[0];
+}
+const sbsAns=c=>payText(c.h,c.fu,c.d,c.p==='tsumo',rules).text;
+function sbsOpts(c){
+  const ts=c.p==='tsumo',ans=sbsAns(c),near=[];
+  [[0,-10],[0,10],[1,0],[-1,0],[0,-10*c.n]].forEach(([dh,df])=>{const h=c.h+dh,f=c.fu+df;if(h>=1&&f>=30)near.push(payText(h,f,c.d,ts,rules).text);});
+  if(!ts)near.push(payText(c.h,c.fu,!c.d,false,rules).text);
+  const pool=[1,2,3,4].flatMap(h=>[30,40,50,60].map(f=>payText(h,f,c.d,ts,rules).text));
+  return sbChoices(ans,near,pool);
+}
+function sbNewStepCard(){
+  const rv=getQ('scard');const sc=rv?rv.sc:sbsPick();
+  Q={type:'score',sb:'scard',sc,ans:sbsAns(sc),opts:sbsOpts(sc),sel:null,done:false,t0:Date.now(),_review:rv?rv._review:null,_note:rv?rv._note:null};
+  sbDrawStepCard();
+}
+function sbDrawStepCard(){
+  const c=Q.sc,d=Q.done,P=SB_PAT[c.p];
+  render(`${courseSeg()}
+    <div class="qhead"><p class="prompt">段階が上がったら何点？</p>${stHTML()}</div>
+    <div class="felt"><div class="bigq"><span class="bq-who ${c.d?'em':''}">${c.d?'親':'子'}</span><span class="bq-pat">${P.n}</span><span class="bq-han">${c.h}<small>翻</small></span><span class="bq-step">＋${c.n}<small>段</small></span></div><p class="rnote">${P.n}は${SBS_BASE[c.p]}符の表。${c.n}段上がると${c.fu}符</p></div>
+<!--CTRL-->
+    <div class="hintrow"><button type="button" class="backstep" data-sguide>📘 覚え方</button><p class="hint">${d?'借りる表は解説で確認できます':'上がった符で「借りる表」を思い出す'}</p></div>
+    <div class="pad c2">${Q.opts.map(o=>{let k='';if(d){if(o===Q.ans)k='ok';else if(o===Q.sel)k='ng';}
+      return `<button class="key ${k}" type="button" data-v="${o}" aria-pressed="${Q.sel===o}" ${d?'disabled':''}>${o}</button>`;}).join('')}</div>`);
+  bindCourse();
+  if(!d){root.querySelectorAll('.pad .key').forEach(b=>b.onclick=()=>{Q.sel=b.dataset.v;sbCheckStepCard();});setGo('答えをタップ',false,null);}
+  else setGo('次の問題',true,next);
+}
+function sbCheckStepCard(){
+  const c=Q.sc;Q.done=true;Q.ok=Q.sel===Q.ans;
+  sbWeight(c.id,Q.ok,Date.now()-Q.t0>8000);record(Q.ok);if(!Q.ok)noteMiss('scard',{sc:c});
+  const msg=sbProgress(Q.ok);sbDrawStepCard();
+  const ts=c.p==='tsumo',P=SB_PAT[c.p];
+  const shiftH=c.fu===30?c.h:c.fu===40&&!ts?c.h:c.h+1;
+  openEx(Q.ok,`${c.d?'親':'子'}・${P.n}・${c.h}翻・＋${c.n}段（${c.fu}符）→ <b>${Q.ans}</b>${msg}`,
+    `<div><h3>借りる表</h3><ol class="proc"><li>${P.n}は<b>${SBS_BASE[c.p]}符</b>の表 → ${c.n}段上げて <b>${c.fu}符</b></li>
+      <li>${c.fu}符は「<b>${sbsBorrow(c.fu,ts)}</b>」</li>
+      <li>${c.fu===40&&!ts?`門前ロンの表の${c.h}翻`:`その表の<b>${shiftH}翻</b>の所（${c.h}翻を1つずらす）`} → <b>${Q.ans}</b></li></ol>
+      <p class="sub">符が2倍＝翻が1つ（20→40、25→50、30→60）なので、表を1つ右で読めます。</p></div>
+     <div><h3>${P.n}の段階表</h3>${sbsTable(c.p,c.d,{n:c.n,h:c.h})}</div>
+     <p><button type="button" class="backstep" data-sguide>📘 段階の覚え方をくわしく</button></p>`);
+  root.querySelectorAll('#exB [data-sguide]').forEach(b=>b.onclick=openStepGuide);
+}
 // 総合：①アガリ方 ②翻 ③段階 ④点数 を順に答える
 const SB_AG=[['tsumo','ツモ'],['menron','門前ロン'],['nakiron','鳴いてロン'],['pin','平和'],['chi','七対子']];
 function sbNewTotal(){
@@ -2191,7 +2339,7 @@ function sbCheckTotal(){
   const yaku=r.yaku.map(y=>`${y.name} ${y.han}`).join('・')+(ctx.dora?`・ドラ${ctx.dora}`:'');
   let s3;
   if(Q.steps==='x')s3=['pin','chi'].includes(g)?`${SB_PAT[p].n}は符が固定（段階は不要）`:r.han>=5?`${r.han}翻なので符は関係なし（段階は不要）`:`4翻は${p==='menron'?'門前ロンで満貫確定':'切り上げ満貫'}なので段階は不要`;
-  else{const x=sbFuX(r).reduce((a,f)=>a+f[1],0);s3=`手牌の符 ${x}符 → ${Q.steps}段階 → ${r.fu}符の表（${sbStepRule(ctx.tsumo).replace(/<\/?b>/g,'')}）`;}
+  else{const x=sbFuX(r).reduce((a,f)=>a+f[1],0);s3=`手牌の符 ${x}符 → ${Q.steps}段階 → ${r.fu}符${Q.steps>0&&r.fu<=60?`（${sbsBorrow(r.fu,ctx.tsumo)}）`:''}`;}
   const fam=sbFam(p),tbl=r.han<=4&&(Q.steps===0||Q.steps==='x')?sbTable(fam,ctx.dealer,{p,h:r.han}):r.han<=4?`<p class="sub">${r.fu}符の表（${ctx.dealer?'親':'子'}・${ctx.tsumo?'ツモ':'ロン'}）</p>${quickRow(r.fu,ctx.dealer,ctx.tsumo,r.han)}`:sbTable(['mR','mT'],ctx.dealer,{p:ctx.tsumo?'mT':'mR',h:r.han});
   openEx(Q.ok,`${SB_PAT[p].n}・${r.han}翻${Q.steps>0?`・${Q.steps}段階`:''} → <b>${r.pay.text}</b>${r.pay.limit?'（'+r.pay.limit+'）':''}${msg}`,
     `<div><h3>渋川式の手順</h3><ol class="proc">
@@ -2205,7 +2353,7 @@ function sbCheckTotal(){
 }
 function newShibu(){
   let st=sbCur=shibu.stage===7?pick(shibu.mix):shibu.stage;
-  if(train&&shibu.stage===7){const g=noteList();if(g.length){const n=pick(g);st=sbCur=n.type==='steps'?5:n.type==='total'?6:(n.src.card.d?4:sbIsMan(n.src.card.p)?1:['tsumo','menron','nakiron'].includes(n.src.card.p)?2:3);}}
+  if(train&&shibu.stage===7){const g=noteList();if(g.length){const n=pick(g);st=sbCur=n.type==='steps'||n.type==='scard'?5:n.type==='total'?6:(n.src.card.d?4:sbIsMan(n.src.card.p)?1:['tsumo','menron','nakiron'].includes(n.src.card.p)?2:3);}}
   if(st<=4)sbNewCard();else if(st===5)sbNewSteps();else sbNewTotal();
   // 初めて開いたステップは、先に解説を見せる（ミックスでは出さない）
   if(shibu.stage!==7&&!shibu.seen[st]){shibu.seen[st]=1;saveSb();openTutorial(st);}
@@ -2521,6 +2669,7 @@ function shibuRef(){
     <tr><td>暗槓</td><td class="num">16</td><td class="num">32</td></tr></table>
     <table class="lt"><tr><td>ツモ</td><td>2符（ロンは0）</td></tr><tr><td>待ち</td><td>カンチャン・ペンチャン・単騎 2符（両面・シャボ 0）</td></tr><tr><td>雀頭</td><td>役牌（三元牌・場風・自風）2符</td></tr></table>
     <p class="sub">合計 <b>12符で1段階、22符で2段階、32符で3段階</b>（平和・七対子以外、${k?3:4}翻まで）</p>`)}
+  ${sec('7a','段階が上がったら借りる表',`<table class="lt"><tr><th>上がった符</th><th>ロン</th><th>ツモ</th></tr><tr><td>40符</td><td>門前ロンの表</td><td>平和ツモの表を1翻ずらす</td></tr><tr><td>50符</td><td colspan="2">七対子の表を1翻ずらす</td></tr><tr><td>60符</td><td colspan="2">30符の表を1翻ずらす</td></tr></table><p class="sub">合言葉「8があったら、あと4」「8が2つで1段」「カンを見たら必ず上がる」。くわしくはステップ5の「📘 覚え方」</p>`)}
   ${sec(7,'点数のはしご（1段階＝1つ右）',`${ladRow('子のロン',false,false,sbLadderMarks(['nakiron','menron','chiR']))}${ladRow('子のツモ',false,true,sbLadderMarks(['tsumo','pinT','chiT']))}${ladRow('親のロン',true,false)}${ladRow('親のツモ',true,true)}
     <p class="sub">はしごが使えるのは、上がったあとが60符までのとき（ふつうは3段階まで）。それより多い符はめったに出ません</p>`)}
   ${sec(8,'満貫以上',`<table class="lt rt"><tr><th></th><th>子ロン</th><th>子ツモ</th><th>親ロン</th><th>親ツモ</th></tr>
@@ -3217,6 +3366,7 @@ const RULESTR=()=>`ルール：喰いタン${rules.kuitan?'あり':'なし'}、�
 function aiContext(){
   const q=Q;if(!q)return '';
   if(q.type==='tenpai')return `【問題】聴牌形：どの牌でアガったら何点か\n手牌（13枚・副露除く）：${handStr(q.ctx.conc)}\n${ctxStr(q.ctx)}\n${RULESTR()}\n【アプリが計算した正解】\n${q.rows.map(x=>`${tLabel(x.t)}：${rStr(x.r)}`).join('\n')}\n【ユーザーの答え】\n${q.rows.map((x,i)=>`${tLabel(x.t)}：${q.sel[i]}`).join('\n')}`;
+  if(q.type==='score'&&q.sb==='scard'){const c=q.sc;return `【問題】渋川式ステップ5：${c.d?'親':'子'}・${SB_PAT[c.p].n}（${SBS_BASE[c.p]}符の表）・${c.h}翻が、符で${c.n}段階上がった（${c.fu}符）ときの点数\n考え方：40符＝門前ロンの表（ツモは平和ツモの表を1翻ずらす）、50符＝七対子の表を1翻ずらす、60符＝30符の表を1翻ずらす\n${RULESTR()}\n【正解】${q.ans}\n【ユーザーの答え】${q.sel}`;}
   if(q.type==='score'&&q.sb==='card'){const c=q.card,P=SB_PAT[c.p];return `【問題】渋川式の暗記カード：${c.d?'親':'子'}・${P.n}${P.tbl?'（'+P.tbl+'の表）':''}・${c.h}翻は何点？`+(q.yk?`\n（翻数のかわりに役名で出題：${q.yk.ys.map(y=>y.n).join('・')}${q.yk.open?'・鳴きあり':''}）`:'')+`\n${RULESTR()}\n【正解】${q.ans}\n【ユーザーの答え】${q.sel}`;}
   if(q.type==='score'&&(q.sb==='steps'||q.sb==='total')){
     const base=`【問題】渋川式（アガリ方で表を選び、翻を数え、符で段階を上げて表を引く方式）\n手牌：${handStr(q.ctx.conc)}（和了牌 ${tLabel(q.ctx.win)}）\n${ctxStr(q.ctx)}\n${RULESTR()}\n【アプリが計算した正解】アガリ方：${SB_PAT[q.p].n}（${SB_PAT[q.p].fu}符の表が基準）／${rStr(q.r)}`;
