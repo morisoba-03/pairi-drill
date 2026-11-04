@@ -531,6 +531,14 @@ button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
 .tool-btn.tr{padding:0 11px}
 .tool-btn.tr[aria-pressed="true"]{background:var(--bad);color:#fff;border-color:var(--bad)}
 .trmsg{color:var(--good)}
+.aibox{display:flex;flex-direction:column;gap:8px;border:1px solid var(--sel);border-radius:12px;padding:10px}
+.aibtn{border:1px solid var(--sel);background:var(--sel);color:var(--sel-ink);border-radius:999px;font-weight:700;font-size:14px;min-height:40px;padding:0 14px}
+.aibtn.s{min-height:36px;font-size:13px;flex:none}
+.aibtn:disabled{opacity:.5}
+.aiout{display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.7}
+.aime{align-self:flex-end;background:var(--bg);border-radius:10px;padding:4px 10px;font-size:13px}
+.aiq{display:flex;gap:6px}
+.aiq input{flex:1;min-width:0;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font:inherit;font-size:14px;background:var(--bg);color:var(--ink)}
 .qhead{flex-wrap:wrap;row-gap:2px}
 .lv button{padding:6px 10px}
 .kindrow .seg.c4{grid-template-columns:repeat(4,1fr)}
@@ -1616,6 +1624,7 @@ function setMode(m){
 }
 function drawLv(){root.querySelectorAll('#lv button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.lv===levels[mode]));}
 function next(){
+  if(aiCtl){aiCtl.abort();aiCtl=null;}
   ex.hidden=true;exT.hidden=true;
   root.querySelector('#lv').hidden=mode==='score'&&course==='shibu';
   const k=qKey();qCount[k]=(qCount[k]||0)+1;
@@ -1626,7 +1635,7 @@ function setGo(label,enabled,fn){go.textContent=label;go.disabled=!enabled;go.on
 $('#skip').onclick=()=>next();
 function openEx(ok,sum,body,pin){
   $('#exV').textContent=ok?'正解':'不正解';$('#exV').className='verdict '+(ok?'ok':'ng');
-  $('#exS').innerHTML=sum+(Q&&Q._trainMsg?`<br><b class="trmsg">${Q._trainMsg}</b>`:'');$('#exB').innerHTML=body;$('#exB').scrollTop=0;
+  $('#exS').innerHTML=sum+(Q&&Q._trainMsg?`<br><b class="trmsg">${Q._trainMsg}</b>`:'');$('#exB').innerHTML=aiBoxHTML()+body;bindAI();$('#exB').scrollTop=0;
   $('#exP').innerHTML=pin?`<div class="felt pinfelt">${pin}</div>`:'';$('#exP').hidden=!pin;
   ex.hidden=false;exT.hidden=false;exT.textContent='解説を閉じる';
 }
@@ -3171,6 +3180,78 @@ function kiruBody(){
     <p class="sub">牌の効率だけで判定しています。役・打点・安全度は考えていません。</p>`;
 }
 
+
+// ===== AIに詳しく聞く（Claudeのアーティファクトとして開いたときだけ） =====
+// アプリが計算した正解と内訳をそのまま渡し、AIには「なぜ違ったか・どう覚えるか」だけを説明させる（答えは再計算させない）
+let AI=null,aiCtl=null;
+try{if(window.claude&&typeof window.claude.use==='function')window.claude.use('sample').then(ns=>{AI=ns||null;}).catch(()=>{AI=null;});}catch(e){AI=null;}
+function handStr(c){
+  const out=[];
+  ['m','p','s'].forEach((x,i)=>{let t='';for(let n=0;n<9;n++)t+=String(n+1).repeat(c[i*9+n]||0);if(t)out.push(t+x);});
+  const h=[];for(let t=27;t<34;t++)for(let k=0;k<(c[t]||0);k++)h.push(HONOR[t-27]);if(h.length)out.push(h.join(''));
+  return out.join(' ');
+}
+const tl=t=>t==null?'なし':tLabel(t);
+function meldStr(ms){return ms.map(m=>({chi:'チー',pon:'ポン',minkan:'明槓',ankan:'暗槓'}[m.k])+' '+meldTiles(m).map(tLabel).join('')).join('、');}
+function ctxStr(ctx){
+  return `場風:${KAZE[ctx.bakaze-27]} 自風:${KAZE[ctx.jikaze-27]}（${ctx.dealer?'親':'子'}） ${ctx.riichi?'立直あり':'立直なし'} ドラ${ctx.dora}枚（裏込み） ${ctx.tsumo?'ツモ':'ロン'}`+(ctx.melds.length?`\n副露：${meldStr(ctx.melds)}`:'');
+}
+function rStr(r){
+  if(!r)return '役なし（アガれない）';
+  return `役：${r.yaku.map(y=>y.name+' '+y.han+'翻').join('、')}／合計${r.han}翻`+(r.han<5?`／符：${r.fuLines.map(f=>f[0]+' '+f[1]).join('、')} → ${r.fu}符`:'')+`／点数：${r.pay.text}${r.pay.limit?'（'+r.pay.limit+'）':''}`+(r.wait?`／待ちの形：${WAITNAME[r.wait]||''}`:'');
+}
+const RULESTR=()=>`ルール：喰いタン${rules.kuitan?'あり':'なし'}、切り上げ満貫${rules.kiriage?'あり':'なし'}、ツモ平和${rules.tsumoPinfu?'あり':'なし'}、連風牌の雀頭${rules.renpu}符`;
+function aiContext(){
+  const q=Q;if(!q)return '';
+  if(q.type==='tenpai')return `【問題】聴牌形：どの牌でアガったら何点か\n手牌（13枚・副露除く）：${handStr(q.ctx.conc)}\n${ctxStr(q.ctx)}\n${RULESTR()}\n【アプリが計算した正解】\n${q.rows.map(x=>`${tLabel(x.t)}：${rStr(x.r)}`).join('\n')}\n【ユーザーの答え】\n${q.rows.map((x,i)=>`${tLabel(x.t)}：${q.sel[i]}`).join('\n')}`;
+  if(q.type==='score'&&q.sb==='card'){const c=q.card,P=SB_PAT[c.p];return `【問題】渋川式の暗記カード：${c.d?'親':'子'}・${P.n}${P.tbl?'（'+P.tbl+'の表）':''}・${c.h}翻は何点？`+(q.yk?`\n（翻数のかわりに役名で出題：${q.yk.ys.map(y=>y.n).join('・')}${q.yk.open?'・鳴きあり':''}）`:'')+`\n${RULESTR()}\n【正解】${q.ans}\n【ユーザーの答え】${q.sel}`;}
+  if(q.type==='score'&&(q.sb==='steps'||q.sb==='total')){
+    const base=`【問題】渋川式（アガリ方で表を選び、翻を数え、符で段階を上げて表を引く方式）\n手牌：${handStr(q.ctx.conc)}（和了牌 ${tLabel(q.ctx.win)}）\n${ctxStr(q.ctx)}\n${RULESTR()}\n【アプリが計算した正解】アガリ方：${SB_PAT[q.p].n}（${SB_PAT[q.p].fu}符の表が基準）／${rStr(q.r)}`;
+    if(q.sb==='steps')return base+`\n段階の正解：${q.ans}段階\n【ユーザーの答え】${q.sel}段階`;
+    return base+`\n段階の正解：${q.steps==='x'?'不要':q.steps+'段階'}\n【ユーザーの答え】アガリ方：${(SB_AG.find(x=>x[0]===q.a)||[0,'?'])[1]}／翻：${q.h}／段階：${q.s==='x'?'不要':q.s}／点数：${q.pt}`;
+  }
+  if(q.type==='score')return `【問題】この和了は何点？\n手牌：${handStr(q.ctx.conc)}（和了牌 ${tLabel(q.ctx.win)}）\n${ctxStr(q.ctx)}\n${RULESTR()}\n【アプリが計算した正解】${rStr(q.r)}\n【ユーザーの答え】${q.h}翻・${q.f}符・${q.p}`;
+  if(q.type==='wait')return `【問題】待ち牌をすべて選ぶ（${sum(q.hand)}枚の手牌）\n手牌：${handStr(q.hand)}\n【アプリが計算した正解】待ち：${q.waits.map(w=>tLabel(w)+'（'+waitShapes(q.hand,w).shapes.map(x=>WAITNAME[x]).join('・')+'）').join('、')}\n分け方の例：${waitBreakdown(q.hand).slice(0,6).map(x=>x.groups.map(g=>groupTiles(g).map(tLabel).join('')).join(' ')+' ／残り '+x.rest.map(tLabel).join('')+' → '+x.ws.map(w=>tLabel(w.t)+WAITNAME[w.s]).join('・')).join('\n')}\n【ユーザーの答え】${[...q.sel].map(tLabel).join('、')}`;
+  if(q.type==='read'){const ri=q.river.findIndex(x=>x.riichi);return `【問題】対面の立直に対して、${q.kind==='safe'?'一番安全な牌':'当たり牌'}を自分の手牌から選ぶ\n対面の河（順番）：${q.river.map((x,i)=>tLabel(x.t)+(i===ri?'(立直宣言)':'')).join(' ')}\nドラ表示牌：${tLabel(q.dora)}\n自分の手牌：${handStr(q.own)}\n選べる候補：${q.cands.map(t=>tLabel(t)+'（'+(q.infos[t]?q.infos[t].label:'')+'）').join('、')}\n【アプリの正解】${tLabel(q.win)}（相手の実際の待ち：${q.waits.map(tLabel).join('・')}）\n候補ごとの判断材料：${q.cands.map(t=>q.infos[t]?tLabel(t)+'：'+(q.infos[t].reasons||[]).join('／'):'').filter(Boolean).join('\n')}\n【ユーザーの答え】${tl(q.sel)}`;}
+  if(q.type==='kiru'){const b=q.res[0];return `【問題】何を切る？（牌効率のみで判定。役・打点・安全度は考えない）\n手牌（14枚）：${handStr(q.hand)}\n【アプリが計算した正解】${q.res.filter(x=>x.s===b.s&&x.cnt===b.cnt).map(x=>tLabel(x.t)).join('・')}切り（${SHAN(b.s)}・受け入れ${b.cnt}枚）\n打牌ごと：${q.res.slice(0,8).map(x=>`${tLabel(x.t)}切り→${SHAN(x.s)} 受け入れ${x.cnt}枚（${x.uke.map(tLabel).join('')}）`).join('\n')}`+(q.tie?`\n受け入れ同数の比較（聴牌時の待ちの平均枚数）：${q.tie.w.map(x=>tLabel(x.t)+' '+x.w.toFixed(1)).join('、')}`:'')+`\n【ユーザーの答え】${tl(q.sel)}切り`;}
+  if(q.type==='uke')return `【問題】${tLabel(q.cut)}を切った後の手（${SHAN(q.s)}）で、引くと前に進む牌（有効牌）をすべて選ぶ\n手牌（13枚）：${handStr(q.hand13)}\n【アプリが計算した正解】${q.uke.map(t=>tLabel(t)+'（残り'+(4-q.c14[t])+'枚）').join('、')} 合計${q.cnt}枚\n【ユーザーの答え】${[...q.sel].map(tLabel).join('、')}`;
+  return '';
+}
+const AI_INST=`あなたは麻雀の家庭教師です。下の問題について、生徒が理解して覚えられるように説明してください。
+・【アプリが計算した正解】は正しいものとして扱い、再計算や訂正はしないでください。
+・生徒の答えが間違っている場合は、どこで・なぜ間違えたかを具体的に（どの牌・どの役・どの符か）指摘してください。正解している場合は、もっと速く確実に解くコツを教えてください。
+・麻雀を覚えたての人にもわかる日本語で、全体で400字以内。見出しは使わず、3〜5個の短い箇条書き（「・」で始める）にしてください。
+・最後に「覚え方：」で始まる1行のまとめを付けてください。`;
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const aiFmt=t=>esc(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>');
+function aiBoxHTML(){return AI&&aiContext()?`<div class="aibox"><button type="button" class="aibtn" id="aiGo">🤖 AIに詳しく聞く</button><div class="aiout" id="aiOut" hidden></div>
+  <form class="aiq" id="aiQ" hidden><input type="text" id="aiIn" placeholder="続けて質問（例：なぜ嵌張は2符？）" autocomplete="off"><button type="submit" class="aibtn s">送る</button></form></div>`:'';}
+function bindAI(){
+  const go=$('#aiGo');if(!go)return;
+  let msgs=[];
+  const out=$('#aiOut'),form=$('#aiQ'),inp=$('#aiIn');
+  const run=async(cache)=>{
+    if(aiCtl)aiCtl.abort();aiCtl=new AbortController();
+    const box=document.createElement('div');box.className='aimsg';box.textContent='考えています…';out.appendChild(box);out.hidden=false;
+    go.disabled=true;form.querySelector('button').disabled=true;
+    try{
+      const r=await AI(msgs,{signal:aiCtl.signal,modelTier:'default',cache,onText:({text})=>{box.innerHTML=aiFmt(text);}});
+      box.innerHTML=aiFmt(r.text);msgs.push({role:'assistant',content:r.text});form.hidden=false;go.hidden=true;
+    }catch(e){
+      msgs.pop();
+      if(e&&e.code==='not_granted'){AI=null;box.textContent='AIの利用が許可されていないため使えません。';go.hidden=true;}
+      else if(e&&e.code==='rate_limited')box.textContent='AIの利用上限に達しました。しばらく待ってからもう一度押してください。';
+      else if(e&&e.name==='AbortError')box.remove();
+      else box.textContent='AIの解説を取得できませんでした。もう一度押してください。';
+    }
+    go.disabled=false;form.querySelector('button').disabled=false;
+  };
+  go.onclick=()=>{msgs=[{role:'user',content:AI_INST+'\n\n'+aiContext()}];out.innerHTML='';run(true);};
+  form.onsubmit=e=>{e.preventDefault();const v=inp.value.trim();if(!v)return;
+    const me=document.createElement('div');me.className='aime';me.textContent=v;out.appendChild(me);inp.value='';
+    msgs.push({role:'user',content:v+'\n（さっきと同じ問題についての質問です。同じく短い箇条書きで答えてください）'});run(false);};
+}
+
 // ===== おさらい・設定 =====
 const sheet=$('#sheet'),panel=$('#panel');
 function openSheet(html,bind){panel.innerHTML=html;sheet.hidden=false;bind&&bind();panel.scrollTop=0;}
@@ -4045,6 +4126,6 @@ layout(); render();
 try{ if (localStorage.getItem(VKEY) === 'drill') showDrill(true); }catch(e){}
 })();
 </script>
-<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});}</script>
+<script>if('serviceWorker' in navigator&&/github\.io$/.test(location.hostname)){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});}</script>
 </body>
 </html>
