@@ -552,6 +552,9 @@ button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
 .pad.c6 .key small{font-size:10px;margin-left:1px}
 .menutg{flex:1;min-width:0;display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 12px;min-height:34px;font-size:13px;text-align:left}
 .menutg b{flex:none;font-size:13px}
+.crsseg{flex:none}
+.crsseg button{min-height:32px!important;padding:4px 10px!important}
+.sbbtns .sbhelp{padding:4px 9px}
 .menutg .sbname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .menutg .sbname small{margin-left:6px;font-weight:700}
 .menutg .chev{flex:none;font-size:10px;color:var(--muted)}
@@ -1895,10 +1898,10 @@ let menuOpen=!!LS.get('menuOpen',false);
 function courseSeg(){
   const a=shibu.rec[shibu.stage]||[],sb=course==='shibu';
   const label=sb?(shibu.stage===7?`ミックス（ステップ${sbCur}）`:`${shibu.stage}：${SB_STAGES[shibu.stage].n}`)+(a.length?`<small>直近${a.reduce((x,y)=>x+y,0)}/${a.length}</small>`:''):(scoreKind==='tenpai'?'聴牌形：何を引いたら何点':'アガリ形');
-  const bar=`<div class="crs"><button type="button" class="menutg" data-menu aria-expanded="${menuOpen}"><b>${sb?'渋川式':'通常'}</b><span class="sbname">${label}</span><span class="chev" aria-hidden="true">${menuOpen?'▲':'▼'}</span></button>`
-    +(sb?`<span class="sbbtns"><button type="button" class="sbhelp em" data-lesson>📖 解説</button><button type="button" class="sbhelp" data-ref aria-label="早見表">📋</button><button type="button" class="sbhelp" data-sbhelp aria-label="渋川式とは">？</button></span>`:'')+'</div>';
+  const bar=`<div class="crs"><div class="seg crsseg" role="group" aria-label="コース"><button type="button" data-course="normal" aria-pressed="${!sb}">通常</button><button type="button" data-course="shibu" aria-pressed="${sb}">渋川式</button></div><button type="button" class="menutg" data-menu aria-expanded="${menuOpen}"><span class="sbname">${label}</span><span class="chev" aria-hidden="true">${menuOpen?'▲':'▼'}</span></button>`
+    +(sb?`<span class="sbbtns"><button type="button" class="sbhelp em" data-lesson aria-label="解説">📖</button><button type="button" class="sbhelp" data-ref aria-label="早見表">📋</button><button type="button" class="sbhelp" data-sbhelp aria-label="渋川式とは">？</button></span>`:'')+'</div>';
   if(!menuOpen)return bar;
-  return bar+`<div class="menubody"><div class="crs"><span class="mlab">コース</span><div class="seg" role="group" aria-label="コース"><button type="button" data-course="normal" aria-pressed="${course==='normal'}">通常</button><button type="button" data-course="shibu" aria-pressed="${sb}">渋川式</button></div></div>`
+  return bar+`<div class="menubody">`
     +(!sb?`<div class="crs"><span class="mlab">出題</span><div class="seg" role="group" aria-label="出題の形"><button type="button" data-skind="agari" aria-pressed="${scoreKind==='agari'}">アガリ形</button><button type="button" data-skind="tenpai" aria-pressed="${scoreKind==='tenpai'}">聴牌形（何を引いたら何点）</button></div></div>`:'')
     +(sb?`<div class="stg">${[1,2,3,4,5,6,7].map(i=>`<button type="button" class="${i===7?'mx':''}" data-stage="${i}" aria-pressed="${shibu.stage===i}">${i===7?'🔀':shibu.cl[i]?'✓':i}<small>${SB_STAGES[i].s}</small></button>`).join('')}</div>`
       +((shibu.stage<=4||(shibu.stage===7&&shibu.mix.some(i=>i<=4)))?`<div class="ykset"><span>翻の出し方${shibu.stage===7?'（ステップ1〜4）':''}</span><div class="seg" role="group" aria-label="翻の出し方">${[['han','翻数'],['yaku','役名'],['mix','混ぜる']].map(([v,l])=>`<button type="button" data-disp="${v}" aria-pressed="${(shibu.disp||'han')===v}">${l}</button>`).join('')}</div></div>`:'')
