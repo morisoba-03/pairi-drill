@@ -538,6 +538,8 @@ button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
 .aiout{display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.7}
 .aime{align-self:flex-end;background:var(--bg);border-radius:10px;padding:4px 10px;font-size:13px}
 .aiq{display:flex;gap:6px}
+.aitier{display:block;font-size:11px;color:var(--muted);margin-top:4px}
+.ex-foot.aiq{padding:8px 10px}
 .aiq input{flex:1;min-width:0;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font:inherit;font-size:14px;background:var(--bg);color:var(--ink)}
 .qhead{flex-wrap:wrap;row-gap:2px}
 .lv button{padding:6px 10px}
@@ -700,9 +702,10 @@ button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
       <div class="ex-head"><span class="verdict" id="exV"></span><span class="ex-sum" id="exS"></span></div>
       <div class="ex-pin" id="exP" hidden></div>
       <div class="ex-body" id="exB"></div>
+      <form class="ex-foot aiq" id="aiQ" hidden><input type="text" id="aiIn" placeholder="続けて質問（例：なぜ嵌張は2符？）" autocomplete="off"><button type="submit" class="aibtn s">送る</button></form>
     </section>
   </div>
-  <div class="act"><button class="primary ghost2" id="skip" type="button">スキップ</button><button class="primary ghost2" id="exT" type="button" hidden>解説を閉じる</button><button class="primary" id="go" type="button" disabled>答え合わせ</button></div>
+  <div class="act"><button class="primary ghost2" id="skip" type="button">スキップ</button><button class="primary ghost2" id="exT" type="button" hidden>解説を閉じる</button><button class="primary ghost2 aiact" id="aiAct" type="button" hidden>🤖 AIに聞く</button><button class="primary" id="go" type="button" disabled>答え合わせ</button></div>
   <div class="tools">
     <div class="lv" role="group" aria-label="レベル" id="lv">
       <button type="button" data-lv="1">初級</button><button type="button" data-lv="2">中級</button><button type="button" data-lv="3">上級</button>
@@ -1628,6 +1631,7 @@ function setMode(m){
 function drawLv(){root.querySelectorAll('#lv button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.lv===levels[mode]));}
 function next(){
   if(aiCtl){aiCtl.abort();aiCtl=null;}
+  $('#aiAct').hidden=true;$('#aiQ').hidden=true;
   ex.hidden=true;exT.hidden=true;
   root.querySelector('#lv').hidden=mode==='score'&&course==='shibu';
   const k=qKey();qCount[k]=(qCount[k]||0)+1;
@@ -3227,19 +3231,19 @@ const AI_INST=`あなたは麻雀の家庭教師です。下の問題につい�
 ・最後に「覚え方：」で始まる1行のまとめを付けてください。`;
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const aiFmt=t=>esc(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>');
-function aiBoxHTML(){return AI&&aiContext()?`<div class="aibox"><button type="button" class="aibtn" id="aiGo">🤖 AIに詳しく聞く</button><div class="aiout" id="aiOut" hidden></div>
-  <form class="aiq" id="aiQ" hidden><input type="text" id="aiIn" placeholder="続けて質問（例：なぜ嵌張は2符？）" autocomplete="off"><button type="submit" class="aibtn s">送る</button></form></div>`:'';}
+function aiBoxHTML(){const on=!!(AI&&aiContext());$('#aiAct').hidden=!on;$('#aiAct').disabled=false;$('#aiQ').hidden=true;return on?`<div class="aiout aibox" id="aiOut" hidden></div>`:'';}
+const TIERN={quick:'高速モデル（Haiku系）',default:'標準モデル（Sonnet系）',complex:'高性能モデル（Opus系）'};
 function bindAI(){
-  const go=$('#aiGo');if(!go)return;
+  const go=$('#aiAct');if(go.hidden)return;
   let msgs=[];
   const out=$('#aiOut'),form=$('#aiQ'),inp=$('#aiIn');
   const run=async(cache)=>{
     if(aiCtl)aiCtl.abort();aiCtl=new AbortController();
     const box=document.createElement('div');box.className='aimsg';box.textContent='考えています…';out.appendChild(box);out.hidden=false;
-    go.disabled=true;form.querySelector('button').disabled=true;
+    go.disabled=true;form.querySelector('button').disabled=true;$('#exB').scrollTop=0;
     try{
       const r=await AI(msgs,{signal:aiCtl.signal,modelTier:'default',cache,onText:({text})=>{box.innerHTML=aiFmt(text);}});
-      box.innerHTML=aiFmt(r.text);msgs.push({role:'assistant',content:r.text});form.hidden=false;go.hidden=true;
+      box.innerHTML=aiFmt(r.text)+`<small class="aitier">回答：${TIERN[r.modelTierApplied]||'Claude'}</small>`;msgs.push({role:'assistant',content:r.text});form.hidden=false;go.hidden=true;
     }catch(e){
       msgs.pop();
       if(e&&e.code==='not_granted'){AI=null;box.textContent='AIの利用が許可されていないため使えません。';go.hidden=true;}
@@ -3249,7 +3253,7 @@ function bindAI(){
     }
     go.disabled=false;form.querySelector('button').disabled=false;
   };
-  go.onclick=()=>{msgs=[{role:'user',content:AI_INST+'\n\n'+aiContext()}];out.innerHTML='';run(true);};
+  go.onclick=()=>{if(ex.hidden){ex.hidden=false;exT.textContent='解説を閉じる';}msgs=[{role:'user',content:AI_INST+'\n\n'+aiContext()}];out.innerHTML='';run(true);};
   form.onsubmit=e=>{e.preventDefault();const v=inp.value.trim();if(!v)return;
     const me=document.createElement('div');me.className='aime';me.textContent=v;out.appendChild(me);inp.value='';
     msgs.push({role:'user',content:v+'\n（さっきと同じ問題についての質問です。同じく短い箇条書きで答えてください）'});run(false);};
