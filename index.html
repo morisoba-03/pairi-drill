@@ -538,6 +538,12 @@ button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
 .aiout{display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.7}
 .aime{align-self:flex-end;background:var(--bg);border-radius:10px;padding:4px 10px;font-size:13px}
 .aiq{display:flex;gap:6px}
+.act .aiact{flex:none;width:58px;padding:0;font-size:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05}
+.act .aiact small{font-size:10px;font-weight:700}
+.sumtiles{display:inline-flex;gap:1px;vertical-align:middle;--tw:20px}
+.pinwait{display:flex;align-items:center;gap:8px;margin-top:6px}
+.pinwait>span{flex:none;font-size:11px;font-weight:700;color:var(--felt-ink)}
+.pinwait .row{justify-content:flex-start}
 .aitier{display:block;font-size:11px;color:var(--muted);margin-top:4px}
 .ex-foot.aiq{padding:8px 10px}
 .aiq input{flex:1;min-width:0;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font:inherit;font-size:14px;background:var(--bg);color:var(--ink)}
@@ -705,7 +711,7 @@ button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
       <form class="ex-foot aiq" id="aiQ" hidden><input type="text" id="aiIn" placeholder="続けて質問（例：なぜ嵌張は2符？）" autocomplete="off"><button type="submit" class="aibtn s">送る</button></form>
     </section>
   </div>
-  <div class="act"><button class="primary ghost2" id="skip" type="button">スキップ</button><button class="primary ghost2" id="exT" type="button" hidden>解説を閉じる</button><button class="primary ghost2 aiact" id="aiAct" type="button" hidden>🤖 AIに聞く</button><button class="primary" id="go" type="button" disabled>答え合わせ</button></div>
+  <div class="act"><button class="primary ghost2" id="skip" type="button">スキップ</button><button class="primary ghost2 aiact" id="aiAct" type="button" hidden aria-label="AIに聞く">🤖<small>AI</small></button><button class="primary ghost2" id="exT" type="button" hidden>解説を閉じる</button><button class="primary" id="go" type="button" disabled>答え合わせ</button></div>
   <div class="tools">
     <div class="lv" role="group" aria-label="レベル" id="lv">
       <button type="button" data-lv="1">初級</button><button type="button" data-lv="2">中級</button><button type="button" data-lv="3">上級</button>
@@ -2856,7 +2862,7 @@ function drawWait(){
         weakAdd((miss.length?waitTags(Q.hand,miss):[]).concat(all.filter(x=>x==='w:清一色'||x==='w:3種以上')));
         noteMiss('wait',{hand:Q.hand.slice()});}}
       drawWait();
-      openEx(Q.ok,`待ちは <b>${Q.waits.map(tLabel).join('・')}</b>（${Q.waits.length}種）`,waitBody(),`<div class="row" style="--n:${Math.max(sum(Q.hand)+.6,8)}">${tiles(toArr(Q.hand))}</div>`);
+      openEx(Q.ok,`待ち ${Q.waits.length}種 <span class="sumtiles">${tiles(Q.waits)}</span>`,waitBody(),`<div class="row" style="--n:${Math.max(sum(Q.hand)+.6,8)}">${tiles(toArr(Q.hand))}</div><div class="pinwait"><span>待ち</span><div class="row" style="--n:${Math.max(sum(Q.hand)+.6,8)}">${Q.waits.map(t=>tileHTML(t,{cls:'win'})).join('')}</div></div>`);
     });
   }else setGo('次の問題',true,next);
 }
@@ -2930,7 +2936,7 @@ function waitBody(){
     else if(info.chiitoi)split='<span class="sub">七対子の単騎</span>';
     return `<div class="waitrow"><div class="top">${tileHTML(w,{cls:'win'})}${st}<span class="tag">${info.shapes.map(s=>WAITNAME[s]).join('・')}${info.chiitoi?'（七対子）':''}</span></div><div class="split">${split}</div></div>`;
   }).join('');
-  return `${wrong.length?`<p class="sub">選んだけれど待ちではない牌：${wrong.map(tLabel).join('・')}</p>`:''}
+  return `${wrong.length?`<p class="sub">選んだけれど待ちではない牌：<span class="sumtiles">${tiles(wrong)}</span></p>`:''}
     ${waitHowTo()}
     <div><h3>それぞれの和了形（橙の文字が和了牌を含む面子）</h3>${rows}</div>`;
 }
@@ -3124,7 +3130,7 @@ function drawUke(){
       Q.done=true;Q.ok=Q.sel.size===us.size&&[...Q.sel].every(t=>us.has(t));record(Q.ok);
       const tg=['u:'+SHAN(Q.s)];if(Q.ok)weakDecay(tg);else{weakAdd(tg);noteMiss('uke',{c14:Q.c14,cut:Q.cut});}
       drawUke();
-      openEx(Q.ok,`有効牌は <b>${Q.uke.length}種 ${Q.cnt}枚</b>`,ukeBody(),`<div class="row" style="--n:13.6">${tiles(arr)}</div>`);
+      openEx(Q.ok,`有効牌 <b>${Q.uke.length}種 ${Q.cnt}枚</b> <span class="sumtiles">${tiles(Q.uke)}</span>`,ukeBody(),`<div class="row" style="--n:13.6">${tiles(arr)}</div>`);
     });
   }else setGo('次の問題',true,next);
 }
