@@ -540,14 +540,6 @@ button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
 .aiq{display:flex;gap:6px}
 .act .aiact{flex:none;width:58px;padding:0;font-size:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05}
 .act .aiact small{font-size:10px;font-weight:700}
-.stg.ld{grid-template-columns:repeat(6,1fr)}
-.crsseg button{padding:4px 8px!important}
-.bq-han.sm{font-size:26px}
-.ldu{font-family:var(--f-disp);font-size:40px;line-height:1;margin-left:4px}
-.ldbar{width:90%;height:6px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden}
-.ldbar i{display:block;height:100%;width:100%;background:var(--face)}
-.ldt tr.hi td{background:var(--sel);color:var(--sel-ink);font-weight:800}
-.ldt tr.brk td{border-top:2px solid var(--line)}
 .sumtiles{display:inline-flex;gap:1px;vertical-align:middle;--tw:20px}
 .pinwait{display:flex;align-items:center;gap:8px;margin-top:6px}
 .pinwait>span{flex:none;font-size:11px;font-weight:700;color:var(--felt-ink)}
@@ -1501,10 +1493,10 @@ let scoreKind=LS.get('scoreKind','agari');if(!['agari','tenpai'].includes(scoreK
 let waitN=LS.get('waitN',13);if(![4,7,10,13].includes(waitN))waitN=13;
 let kiruKind=LS.get('kiruKind','cut');if(!['cut','uke'].includes(kiruKind))kiruKind='cut';
 function qKey(){
-  if(mode==='score')return course==='shibu'?'shibu'+shibu.stage:course==='ladder'?'ladder'+ladd.stage:'score'+scoreKind+levels.score;
+  if(mode==='score')return course==='shibu'?'shibu'+shibu.stage:'score'+scoreKind+levels.score;
   return mode+({read:readKind,kiru:kiruKind,wait:waitN}[mode]||'')+levels[mode];
 }
-function wGroup(){return mode==='score'?(course==='shibu'?'shibu':course==='ladder'?'ladder':scoreKind==='tenpai'?'tenpai':'score'):mode==='kiru'?'kiru'+kiruKind:mode;}
+function wGroup(){return mode==='score'?(course==='shibu'?'shibu':scoreKind==='tenpai'?'tenpai':'score'):mode==='kiru'?'kiru'+kiruKind:mode;}
 function weakAdd(tags){const g=weak[wGroup()]||(weak[wGroup()]={});new Set(tags).forEach(t=>{g[t]=Math.min(8,(g[t]||0)+1);});saveWeak();}
 function weakDecay(tags){const g=weak[wGroup()];if(!g)return;new Set(tags).forEach(t=>{if(g[t]){g[t]*=0.6;if(g[t]<0.3)delete g[t];}});saveWeak();}
 function pickWeakTag(){
@@ -1556,11 +1548,7 @@ const BUILD={
   wait:(x,k)=>k==='same'?{hand:x.hand.slice(),waits:waitsOf(x.hand.slice())}:variantWait(x.hand),
   kiru:(x,k)=>k==='same'?{hand:x.hand.slice(),res:analyzeDiscards(x.hand)}:variantKiru(x.hand),
   uke:(x,k)=>{if(k!=='same')return variantUke({c14:x.c14,cut:x.cut});const res=analyzeDiscards(x.c14),y=res.find(r=>r.t===x.cut);if(!y)return null;const c13=x.c14.slice();c13[x.cut]--;return{hand13:c13,c14:x.c14.slice(),cut:x.cut,uke:y.uke,cnt:y.cnt,s:y.s};},
-  read:(x,k)=>k==='same'?JSON.parse(JSON.stringify(x.q)):null,
-  lfu:(x,k)=>BUILD.score(x,k),
-  lcard:(x,k)=>{const c=x.card;if(k==='same')return{card:c};const u=unitOf(c.fu,c.h),i=LD_U.indexOf(u);
-    const cs=ldCards(c.st===6?3:c.st).filter(y=>y.id!==c.id&&y.d===c.d&&y.ts===c.ts&&(unitOf(y.fu,y.h)===u||Math.abs(LD_U.indexOf(unitOf(y.fu,y.h))-i)===1));
-    return{card:cs.length?{...pick(cs),st:c.st}:c};}
+  read:(x,k)=>k==='same'?JSON.parse(JSON.stringify(x.q)):null
 };
 function noteList(){return notes[wGroup()]||(notes[wGroup()]=[]);}
 function noteMiss(type,src){
@@ -1636,7 +1624,7 @@ function scoreTagsBy(ctx,r){
   return{h:[...new Set(h)],f:[...new Set(f)],p};
 }
 const scoreAllTags=(ctx,r)=>{const T=scoreTagsBy(ctx,r);return T.h.concat(T.f,T.p);};
-function cur(){const k=(mode==='score'&&course==='shibu')?'shibu'+shibu.stage:(mode==='score'&&course==='ladder')?'ladder'+ladd.stage:mode+(mode==='read'?(typeof readKind!=='undefined'?readKind:'hit'):mode==='score'&&scoreKind==='tenpai'?'tenpai':mode==='kiru'&&kiruKind==='uke'?'uke':mode==='wait'&&waitN!==13?'n'+waitN:'')+levels[mode];return stats[k]||(stats[k]={ok:0,n:0,st:0});}
+function cur(){const k=(mode==='score'&&course==='shibu')?'shibu'+shibu.stage:mode+(mode==='read'?(typeof readKind!=='undefined'?readKind:'hit'):mode==='score'&&scoreKind==='tenpai'?'tenpai':mode==='kiru'&&kiruKind==='uke'?'uke':mode==='wait'&&waitN!==13?'n'+waitN:'')+levels[mode];return stats[k]||(stats[k]={ok:0,n:0,st:0});}
 function stHTML(){const s=cur();return `<span class="st" id="st">${revBadge()}<b>${s.ok}</b>/${s.n}問 · 連続<b>${s.st}</b></span>`;}
 function record(ok){trainHook(ok);const s=cur();s.n++;if(ok){s.ok++;s.st++;}else s.st=0;LS.set('stats2',stats);const e=$('#st');if(e)e.outerHTML=stHTML();}
 
@@ -1651,10 +1639,9 @@ function next(){
   if(aiCtl){aiCtl.abort();aiCtl=null;}
   $('#aiAct').hidden=true;$('#aiQ').hidden=true;
   ex.hidden=true;exT.hidden=true;
-  root.querySelector('#lv').hidden=mode==='score'&&course!=='normal';
-  ldStopTimer();
+  root.querySelector('#lv').hidden=mode==='score'&&course==='shibu';
   const k=qKey();qCount[k]=(qCount[k]||0)+1;
-  if(mode==='score')(course==='shibu'?newShibu():course==='ladder'?newLadder():newScore());else if(mode==='wait')newWait();else if(mode==='read')newRead();else newKiru();
+  if(mode==='score')(course==='shibu'?newShibu():newScore());else if(mode==='wait')newWait();else if(mode==='read')newRead();else newKiru();
   view.scrollTop=0;
 }
 function setGo(label,enabled,fn){go.textContent=label;go.disabled=!enabled;go.onclick=fn;$('#skip').hidden=!!(Q&&Q.done);}
@@ -1796,8 +1783,7 @@ function checkScore(){
   {const T=scoreTagsBy(Q.ctx,r),bad=[];if(Q.h!==r.han)bad.push(...T.h);if(r.han<5&&Q.f!==r.fu)bad.push(...T.f);if(Q.p!==r.pay.text)bad.push(...T.p);
    if(Q.ok)weakDecay(scoreAllTags(Q.ctx,r));else{weakAdd(bad);noteMiss('score',{ctx:Q.ctx});}}
   drawScore();
-  const ldm=Q.ld?ldProgress(Q.ok,(Date.now()-Q.t0)/1000):'';
-  openEx(Q.ok,`${r.han}翻${r.han>=5?'':' '+r.fu+'符'} → <b>${r.pay.text}</b>${r.pay.limit?'（'+r.pay.limit+'）':''}${ldm}`,(Q.ld?ldPathHTML(Q.ctx,r):'')+scoreBody(),handScoreHTML(Q.ctx));
+  openEx(Q.ok,`${r.han}翻${r.han>=5?'':' '+r.fu+'符'} → <b>${r.pay.text}</b>${r.pay.limit?'（'+r.pay.limit+'）':''}`,scoreBody(),handScoreHTML(Q.ctx));
 }
 function memoHTML(ctx,r){
   const ft=fuTips(ctx,r);const who=(ctx.dealer?'親':'子')+'の'+(ctx.tsumo?'ツモ':'ロン');
@@ -1851,208 +1837,9 @@ function scoreBody(){
    ${memoHTML(ctx,r)}`;
 }
 
-
-// ===== はしご式（Claudeが設計した覚え方） =====
-// 考え方：点数は「単位＝符の十の位×2を翻の数だけ掛けた数」1つで決まる（基本点＝符×2^(翻+2)＝単位×40）。
-// 単位ごとの点数を1本の「はしご」として覚え、単位が倍なら点数もほぼ倍、50以上は満貫、で全部の点数を出す。
-let ladd=Object.assign({stage:1,rec:{},cl:{},w:{},seen:{}},LS.get('ladder',{}));
-if(!(ladd.stage>=1&&ladd.stage<=6))ladd.stage=1;
-const saveLd=()=>LS.set('ladder',ladd);
-const LD_ST=[null,{n:'単位をつくる',s:'単位'},{n:'子ロンのはしご',s:'子ロン'},{n:'親とツモに変える',s:'親・ツモ'},{n:'符を一瞬で決める',s:'符'},{n:'総合（実戦形）',s:'総合'},{n:'スピード',s:'速さ'}];
-const LD_SEC={1:4,2:4,3:6,4:8,5:25,6:5};          // 卒業の目安：平均回答時間（秒）
-const LD_U=[6,8,10,12,14,16,18,20,22,24,28,32,36,40,44,48];
-const LD_REP={6:[30,1],8:[40,1],10:[50,1],12:[30,2],14:[70,1],16:[40,2],18:[90,1],20:[50,2],22:[110,1],24:[30,3],28:[70,2],32:[40,3],36:[90,2],40:[50,3],44:[110,2],48:[30,4]};
-const unitOf=(fu,h)=>fu/10*Math.pow(2,h);
-const LD_TYPE=(d,ts)=>(d?'親':'子')+(ts?'ツモ':'ロン');
-function ldRung(u,d,ts){const [fu,h]=LD_REP[u];return payText(h,fu,d,ts,rules);}
-function ldRow(d,ts,hl){
-  return `<div class="ladder">${LD_U.map(u=>{const pt=ldRung(u,d,ts);
-    return `<span class="lstep ${u===hl?'to':''}"><b>${pt.limit?'満貫':pt.text.replace('・','・<wbr>').replace('オール','<wbr>オール')}</b><small>単位${u}</small></span>`;}).join('<i>→</i>')}<span class="lstep ${hl>48?'to':''}"><b>満貫</b><small>50〜</small></span></div>`;
-}
-function ldTableHTML(hl){
-  const T=[[false,false],[true,false],[false,true],[true,true]];
-  return `<div class="scroll"><table class="sbt ldt"><tr><th>単位</th>${T.map(([d,ts])=>`<th class="num">${LD_TYPE(d,ts)}</th>`).join('')}</tr>
-    ${LD_U.map(u=>`<tr class="${u===hl?'hi':''} ${u===24?'brk':''}"><td>${u}<small class="sbf">${LD_REP[u][0]}符${LD_REP[u][1]}翻ほか</small></td>${T.map(([d,ts])=>{const pt=ldRung(u,d,ts);return `<td class="num">${pt.limit?'満貫':pt.text.replace('・','・<wbr>').replace('オール','<wbr>オール')}</td>`;}).join('')}</tr>`).join('')}
-    <tr class="${hl>48?'hi':''}"><td>50〜</td>${T.map(([d,ts])=>`<td class="num">${payText(5,30,d,ts,rules).text.replace('・','・<wbr>').replace('オール','<wbr>オール')}</td>`).join('')}</tr></table></div>
-    <p class="sub">${rules.kiriage?'切り上げ満貫ありのルールなので、単位48（30符4翻・60符3翻）も満貫です。':'単位48（30符4翻・60符3翻）は 7700。切り上げ満貫ありのルールなら満貫です。'}</p>`;
-}
-const LD_PAIRS=[[6,12,24,48],[8,16,32],[10,20,40],[14,28],[18,36],[22,44]];
-function ldPairNote(u){
-  const c=LD_PAIRS.find(a=>a.includes(u));if(!c)return '';
-  return `単位を倍にすると点数もほぼ倍：${c.map(x=>`${x}→${ldRung(x,false,false).limit?'満貫':ldRung(x,false,false).text}`).join('、')}（子ロン）`;
-}
-function ldUnitHow(fu,h){const t=fu/10;return `${fu}符 → <b>${t}</b>、${h}翻 → ×2を${h}回（×${Math.pow(2,h)}）＝ <b>単位${t*Math.pow(2,h)}</b>`;}
-// ---- 問題カード（1〜3・6） ----
-const LD_FW={20:2,25:2,30:6,40:5,50:2,60:2,70:1.2,80:1,90:.7,100:.6,110:.5};
-function ldCards(st){
-  const out=[];
-  Object.keys(LD_FW).map(Number).forEach(fu=>[1,2,3,4].forEach(h=>{
-    if(fu===25&&h<2)return;if(fu===20&&h<2)return;
-    const u=unitOf(fu,h);if(u>64)return;
-    const ws=LD_FW[fu]*(u>48?.25:1);
-    const push=(d,ts)=>out.push({st,fu,h,d,ts,w:ws,id:[st,fu,h,d?1:0,ts?1:0].join('-')});
-    if(st===1){if(fu!==20)push(false,false);}
-    else if(st===2){if(fu!==20)push(false,false);}
-    else [[false,false],[true,false],[false,true],[true,true]].forEach(([d,ts])=>{if(fu===20&&!ts)return;push(d,ts);});
-  }));
-  return out;
-}
-function ldPick(st){
-  const cs=ldCards(st===6?3:st),last=Q&&Q.card?Q.card.id:null;
-  const ws=cs.map(c=>c.id===last?0:c.w*(ladd.w[c.id]||1));
-  let r=Math.random()*ws.reduce((a,b)=>a+b,0);
-  for(let i=0;i<cs.length;i++){r-=ws[i];if(r<=0)return{...cs[i],st};}
-  return{...cs[0],st};
-}
-function ldAns(c){return c.st===1?String(unitOf(c.fu,c.h)):payText(c.h,c.fu,c.d,c.ts,rules).text;}
-function ldOpts(c){
-  const ans=ldAns(c),seen=new Set([ans]),out=[];
-  const add=a=>a.forEach(x=>{if(out.length<3&&x&&!seen.has(x)){seen.add(x);out.push(x);}});
-  if(c.st===1){const u=unitOf(c.fu,c.h);add(shuffle([u*2,u/2,u+2,u-2,u+4,unitOf(c.fu,c.h+1),unitOf(c.fu,Math.max(1,c.h-1))].filter(x=>x>=4&&x%1===0).map(String)));add(LD_U.map(String));}
-  else{
-    const u=unitOf(c.fu,c.h),d=c.d,ts=c.ts,i=LD_U.indexOf(u);
-    const near=[i-1,i+1,i-2,i+2].filter(j=>j>=0&&j<LD_U.length).map(j=>ldRung(LD_U[j],d,ts).text);
-    if(u>48)near.push(ldRung(48,d,ts).text,ldRung(44,d,ts).text);
-    if(!ts)near.push(payText(c.h,c.fu,!d,false,rules).text);
-    add(shuffle(near));add(shuffle(LD_U.map(x=>ldRung(x,d,ts).text)));
-  }
-  return out.concat([ans]).sort((a,b)=>c.st===1?a-b:payVal(a)-payVal(b));
-}
-function ldNewCard(st){
-  const rv=getQ('lcard');const card=rv?rv.card:ldPick(st);
-  Q={type:'ldcard',card,ans:ldAns(card),opts:ldOpts(card),sel:null,done:false,t0:Date.now(),_review:rv?rv._review:null,_note:rv?rv._note:null};
-  ldDrawCard();
-}
-let ldTimer=null;
-function ldStopTimer(){if(ldTimer){clearInterval(ldTimer);ldTimer=null;}}
-function ldDrawCard(){
-  const c=Q.card,d=Q.done,u=unitOf(c.fu,c.h);
-  const prompt=c.st===1?'単位は？':c.st===2?'子のロンは何点？':'何点？';
-  const face=c.st===1?`<span class="bq-han">${c.fu}<small>符</small></span><span class="bq-han">${c.h}<small>翻</small></span>`
-    :c.st===2?`<span class="bq-pat">単位 <b class="ldu">${u}</b></span><span class="bq-han sm">${c.fu}<small>符</small>${c.h}<small>翻</small></span>`
-    :`<span class="bq-who ${c.d?'em':''}">${c.d?'親':'子'}</span><span class="bq-pat">${c.ts?'ツモ':'ロン'}</span><span class="bq-han">${c.fu}<small>符</small></span><span class="bq-han">${c.h}<small>翻</small></span>`;
-  const hint=c.st===1?'符の十の位 × 2を翻の数だけ':c.st===2?'はしごの何段目か':c.ts?(c.d?'親のツモは「◯オール」':'子のツモは「子の払い・親の払い」'):'';
-  render(`${courseSeg()}
-    <div class="qhead"><p class="prompt">${prompt}</p>${stHTML()}</div>
-    <div class="felt"><div class="bigq">${face}</div>${hint?`<p class="rnote">${hint}</p>`:''}${c.st===6&&!d?'<div class="ldbar"><i id="ldbar"></i></div>':''}</div>
-<!--CTRL-->
-    <p class="hint">${d?'解説で「単位」とはしごの位置を確認できます':'答えをタップすると、すぐ答え合わせします'}</p>
-    <div class="pad c2">${Q.opts.map(o=>{let k='';if(d){if(o===Q.ans)k='ok';else if(o===Q.sel)k='ng';}
-      return `<button class="key ${k}" type="button" data-v="${o}" aria-pressed="${Q.sel===o}" ${d?'disabled':''}>${c.st===1?'単位 '+o:o}</button>`;}).join('')}</div>`);
-  bindCourse();
-  if(!d){
-    root.querySelectorAll('.pad .key').forEach(b=>b.onclick=()=>{Q.sel=b.dataset.v;ldCheckCard();});
-    setGo('答えをタップ',false,null);
-    if(c.st===6){ldStopTimer();const lim=LD_SEC[6]*1000;ldTimer=setInterval(()=>{const e=Date.now()-Q.t0,bar=$('#ldbar');if(bar)bar.style.width=Math.max(0,100-e/lim*100)+'%';if(e>=lim&&!Q.done){Q.sel='時間切れ';ldCheckCard();}},100);}
-  }else setGo('次の問題',true,next);
-}
-function ldWeight(id,ok,slow){const w=ladd.w[id]||1;ladd.w[id]=!ok?Math.min(10,w+3):slow?w+.5:Math.max(1,w*.6);}
-function ldProgress(ok,t){
-  const st=ladd.stage,a=(ladd.rec[st]=(ladd.rec[st]||[]).concat([[ok?1:0,Math.round(t*10)/10]]).slice(-10));
-  let msg='';
-  const okN=a.reduce((x,y)=>x+y[0],0),avg=a.reduce((x,y)=>x+y[1],0)/a.length;
-  if(!ladd.cl[st]&&a.length>=10&&okN>=8&&avg<=LD_SEC[st]){ladd.cl[st]=1;msg=`<br><b>ステップ${st}クリア！</b>（直近10問 ${okN}問正解・平均${avg.toFixed(1)}秒）`;}
-  saveLd();return msg;
-}
-function ldCheckCard(){
-  ldStopTimer();
-  const c=Q.card,t=(Date.now()-Q.t0)/1000;Q.done=true;Q.ok=Q.sel===Q.ans;
-  ldWeight(c.id,Q.ok,t>LD_SEC[c.st]);record(Q.ok);
-  if(!Q.ok)noteMiss('lcard',{card:c});
-  const msg=ldProgress(Q.ok,t);ldDrawCard();
-  const u=unitOf(c.fu,c.h);
-  const sum=c.st===1?`${c.fu}符${c.h}翻 → <b>単位${u}</b>${u>48?'（50以上なので満貫）':''}`:`${c.st===2?'子ロン':LD_TYPE(c.d,c.ts)}・${c.fu}符${c.h}翻（単位${u}）→ <b>${Q.ans}</b>`;
-  openEx(Q.ok,`${sum}　${t.toFixed(1)}秒${Q.sel==='時間切れ'?'（時間切れ）':''}${msg}`,
-    `<div><h3>単位のつくり方</h3><p>${ldUnitHow(c.fu,c.h)}</p>${u>48?'<p class="sub">単位が50以上（基本点2000以上）は、すべて満貫です。</p>':''}</div>
-     ${c.st===1?'':`<div><h3>${c.st===2?'子ロン':LD_TYPE(c.d,c.ts)}のはしご</h3>${ldRow(c.st===2?false:c.d,c.st===2?false:c.ts,u)}</div>`}
-     ${u<=48?`<div><h3>覚え方</h3><p class="sub">${ldPairNote(u)}</p>${c.st>=3?`<p class="sub">${ldConvNote(c)}</p>`:''}</div>`:''}`);
-}
-function ldConvNote(c){
-  const u=unitOf(c.fu,c.h),k=ldRung(u,false,false);
-  if(u>48)return '';
-  if(!c.ts&&c.d)return `親のロンは子のロン（${k.text}）の約1.5倍。100点の切り上げでずれる所はこの表で覚えます`;
-  if(c.ts&&c.d)return `親のツモ（オール）は、子のロン（${k.text}）のだいたい半分ずつ`;
-  if(c.ts)return `子のツモは「子のロン（${k.text}）の約1/4・約1/2」。親の払いは子の払いの倍`;
-  return '';
-}
-// ---- ステップ4：符を一瞬で決める ----
-const LD_FUS=[20,25,30,40,50,60,70,80,90,100,110];
-function ldGenFu(){for(let k=0;k<200;k++){const q=genScoreQ(rules,pick([2,2,3]));if(q&&q.r.han<=4)return q;}return genScoreQ(rules,2);}
-function ldNewFu(){
-  const q=getQ('lfu')||biasedGen(ldGenFu,q=>scoreTagsBy(q.ctx,q.r).f);
-  Q={type:'ldfu',...q,sel:null,done:false,t0:Date.now()};ldDrawFu();
-}
-function ldDrawFu(){
-  const {ctx,r}=Q,d=Q.done;
-  render(`${courseSeg()}
-    <div class="qhead"><p class="prompt">この手は何符？</p>${stHTML()}</div>
-<!--CTRL-->
-    <div class="felt sbtot"><div class="chips"><span class="chip">${KAZE[ctx.bakaze-27]}場</span><span class="chip">${KAZE[ctx.jikaze-27]}家</span></div>${handScoreHTML(ctx)}</div>
-    <p class="hint">まず基準（鳴き30・門前ロン40・門前ツモ30・平和ツモ20・七対子25）、次にハネる材料を探す</p>
-    <div class="pad c6">${LD_FUS.map(f=>{let k='';if(d){if(f===r.fu)k='ok';else if(f===Q.sel)k='ng';}return `<button class="key ${k}" type="button" data-v="${f}" aria-pressed="${Q.sel===f}" ${d?'disabled':''}>${f}<small>符</small></button>`;}).join('')}</div>`);
-  bindCourse();
-  if(!d){root.querySelectorAll('.pad .key').forEach(b=>b.onclick=()=>{Q.sel=+b.dataset.v;ldCheckFu();});setGo('答えをタップ',false,null);}
-  else setGo('次の問題',true,next);
-}
-function ldBase(ctx,r){return r.chiitoi?25:r.pinfu?(ctx.tsumo?20:30):!r.menzen?30:ctx.tsumo?30:40;}
-function ldCheckFu(){
-  const {ctx,r}=Q,t=(Date.now()-Q.t0)/1000;Q.done=true;Q.ok=Q.sel===r.fu;record(Q.ok);
-  const tg=scoreTagsBy(ctx,r).f;if(Q.ok)weakDecay(tg);else{weakAdd(tg);noteMiss('lfu',{ctx});}
-  const msg=ldProgress(Q.ok,t);ldDrawFu();
-  const ft=fuTips(ctx,r),b=ldBase(ctx,r);
-  const extra=r.chiitoi||r.pinfu?[]:r.fuLines.filter(f=>!/^副底|^門前ロン|^ツモ$|^副露の平和形/.test(f[0]));
-  openEx(Q.ok,`<b>${r.fu}符</b>（基準${b}符${extra.length?'からハネ':'のまま'}）　${t.toFixed(1)}秒${msg}`,
-    `<div><h3>速い人の見方</h3><ol class="proc"><li>アガリ方で<b>基準</b>を決める → この手は <b>${b}符</b>${b===40?'（門前ロンは副底20＋門前10＝30に、小さな材料が少し付いて40になるのがふつう）':''}</li>
-      <li>ハネる材料だけ探す：<b>幺九の暗刻(8)・槓子(8〜32)</b>が大きい。中張の暗刻4・ポン2〜4・嵌張/辺張/単騎2・役牌の雀頭2・ツモ2は小さい</li>
-      <li>${extra.length?`材料：${extra.map(f=>f[0].replace(/（.*?）|※.*$/g,'')+' '+f[1]).join('・')} → 合計 ${r.rawFu}符 → 切り上げて`:'材料なし →'} <b>${r.fu}符</b>${r.fu>b?`（基準より${(r.fu-b)/10}段ハネ）`:''}</li></ol></div>
-     <div><h3>符の内訳</h3><p>${ft.head}</p>${ft.lines.length?`<ul>${ft.lines.map(x=>`<li>${x}</li>`).join('')}</ul>`:''}${ft.tail?`<p>${ft.tail}</p>`:''}</div>
-     <div><h3>手の分け方</h3><div class="split">${sbSplit(r,ctx.win)}</div></div>`,handScoreHTML(ctx));
-}
-// ---- ステップ5：総合（通常の点数計算の画面を使い、解説に単位の道すじを足す） ----
-function ldNewTotal(){
-  const q=getQ('score')||biasedGen(()=>genScoreQ(rules,pick([1,2,2,3])),q=>scoreAllTags(q.ctx,q.r));
-  Q={type:'score',ld:true,lv:2,...q,h:null,f:null,p:null,step:'h',done:false,t0:Date.now(),opts:scoreDistractors(q.ctx,q.r,rules).sort((a,b)=>payVal(a)-payVal(b))};
-  drawScore();
-}
-function ldPathHTML(ctx,r){
-  const u=r.han>=5?null:unitOf(r.fu,r.han);
-  return `<div><h3>はしご式の道すじ</h3><ol class="proc"><li>符：<b>${r.fu}符</b>（基準${ldBase(ctx,r)}符）</li><li>翻：<b>${r.han}翻</b></li>
-    <li>${u==null?`5翻以上なので満貫以上の表（${r.pay.limit}）`:`${ldUnitHow(r.fu,r.han)}${u>48?' → 50以上なので満貫':''}`}</li>
-    <li>${LD_TYPE(ctx.dealer,ctx.tsumo)}のはしご → <b>${r.pay.text}</b></li></ol>${u!=null?ldRow(ctx.dealer,ctx.tsumo,u):''}</div>`;
-}
-// ---- 振り分け・解説 ----
-function newLadder(){
-  const st=ladd.stage;
-  if(st===4)ldNewFu();else if(st===5)ldNewTotal();else ldNewCard(st);
-  if(!ladd.seen[st]){ladd.seen[st]=1;saveLd();ldLesson(st);}
-}
-function ldGuide(){
-  return `<h2>はしご式とは</h2><div class="sbh">
-  <section><p class="lead">点数の速い人は、表を丸ごと覚えているのではなく<b>「法則」</b>で出しています。はしご式はその法則を1本にまとめた覚え方です。</p></section>
-  <section><h3><i>1</i>点数は「単位」1つで決まる</h3><p><b>単位 ＝ 符の十の位 × 2を翻の数だけ</b><br>例：30符2翻 → 3×2×2 ＝ <b>12</b>　40符3翻 → 4×2×2×2 ＝ <b>32</b></p>
-    <p class="sub">同じ単位なら点数も同じ（60符1翻と30符2翻はどちらも単位12）。「符が倍＝翻が1つ」なので、70符・90符のような珍しい符もこれで出せます。</p></section>
-  <section><h3><i>2</i>単位ごとの点数を「はしご」で覚える</h3>${ldRow(false,false,null)}
-    <p class="sub">前半（単位6〜22）は 1000・1300・1600・2000・2300・2600・2900・3200・3600。後半は前半のほぼ倍。</p></section>
-  <section><h3><i>3</i>倍の関係で覚える量を半分に</h3><p>${LD_PAIRS.map(c=>c.map(x=>`${x}:${ldRung(x,false,false).text}`).join(' → ')).join('<br>')}</p><p class="sub">50以上は満貫（8000）。</p></section>
-  <section><h3><i>4</i>符は「基準＋ハネ」で一瞬</h3><p>鳴き30・門前ロン40・門前ツモ30・平和ツモ20・七対子25。ハネるのはほぼ<b>幺九の暗刻・槓子</b>があるとき。</p></section>
-  <section><h3><i>5</i>練習の進め方</h3><p>ステップ1〜3で「単位→点数」を体に入れ、4で符、5で通しの実戦形、6で時間制限つき。<b>各ステップは直近10問で8問正解、かつ平均の回答時間が目安以内でクリア</b>です。</p></section>
-  </div>`;
-}
-function ldLesson(st){
-  const body={1:`<p><b>単位 ＝ 符の十の位 × 2を翻の数だけ</b></p><p>30符1翻 → 3×2 ＝ 6、30符2翻 → 3×2×2 ＝ 12、40符3翻 → 4×8 ＝ 32、25符2翻 → 2.5×4 ＝ 10</p><p class="sub">2・4・8・16（翻が1〜4）を掛けるだけ。単位が50以上なら満貫です。</p>`,
-    2:`<p>子のロンを単位で並べた「はしご」を覚えます。</p>${ldRow(false,false,null)}<p class="sub">まず前半の9段（1000〜3600）。後半はその倍：2000→3900、1300→2600→5200、1600→3200→6400、2300→4500、2900→5800、3600→7100。2000・2300・3600・3900 は倍にすると100少ないのがポイント。</p>`,
-    3:`<p>同じ単位の、親のロン・子のツモ・親のツモを覚えます。</p><ul class="guide"><li>親のロン ≒ 子のロン × 1.5（単位12：2000 → 2900）</li><li>子のツモ ≒ 子の払いが子ロンの約1/4、親の払いがその倍（単位12：500・1000）</li><li>親のツモ ≒ 子のツモの「親の払い」と同じ額のオール（単位12：1000オール）</li></ul><p class="sub">端数のずれは「📋 はしご表」で確認できます。</p>`,
-    4:`<p>符は足し算しなくても、<b>基準</b>と<b>ハネる材料</b>だけで決まります。</p><ul class="guide"><li>基準：鳴き30／門前ロン40／門前ツモ30／平和ツモ20／平和ロン30／七対子25</li><li>大きくハネる：幺九牌の暗刻（8）、槓子（明槓8〜16、暗槓16〜32）</li><li>小さい材料（2〜4）は2つ以上そろうと10符上がることがある</li></ul>`,
-    5:`<p>実戦と同じ形で「翻→符→点数」を答えます。解説に<b>単位の道すじ</b>が出るので、はしごで答えを出す流れを確認しましょう。</p>`,
-    6:`<p>ステップ3と同じ問題を<b>${LD_SEC[6]}秒以内</b>に答えます。考えずに口から出るところまで仕上げる段階です。</p>`}[st];
-  openSheet(`<h2>はしご式 ステップ${st}：${LD_ST[st].n}</h2><div class="sbh lesson">${body}</div><button class="primary ghost" type="button" id="ldAll">はしご式の全体像を見る</button><button class="primary" type="button" id="cls">はじめる</button>`,
-    ()=>{$('#cls').onclick=closeSheet;$('#ldAll').onclick=()=>openSheet(ldGuide()+`<button class="primary" type="button" id="cls">閉じる</button>`,()=>{$('#cls').onclick=closeSheet;});});
-}
-function openLdRef(){openSheet(`<h2>はしご表（単位 → 点数）</h2>${ldTableHTML(Q&&Q.card?unitOf(Q.card.fu,Q.card.h):null)}<p class="sub">単位 ＝ 符の十の位 × 2を翻の数だけ。50以上は満貫。</p><button class="primary" type="button" id="cls">閉じる</button>`,()=>{$('#cls').onclick=closeSheet;});}
-
 // ===== 渋川式 =====
 // 符を後回しにして、アガリ方ごとの「表」を覚える方式。段階1〜4は表の暗記カード、5は符の段階、6は実戦形の総合問題
-let course=LS.get('course','normal');if(!['normal','shibu','ladder'].includes(course))course='normal';
+let course=LS.get('course','normal');if(!['normal','shibu'].includes(course))course='normal';
 let shibu=Object.assign({stage:1,w:{},rec:{},cl:{},seen:{},mix:[1,2,3]},LS.get('shibu',{}));
 if(!(shibu.stage>=1&&shibu.stage<=7))shibu.stage=1;
 shibu.mix=(Array.isArray(shibu.mix)?shibu.mix:[]).filter(i=>i>=1&&i<=6);if(!shibu.mix.length)shibu.mix=[1,2,3];
@@ -2119,33 +1906,29 @@ function sbWeight(id,ok,slow){const w=shibu.w[id]||1;shibu.w[id]=!ok?Math.min(10
 // 上部メニューは折りたたみ式。たたんだ時は今のコースとステップだけを1行で見せる
 let menuOpen=!!LS.get('menuOpen',false);
 function courseSeg(){
-  const a=shibu.rec[shibu.stage]||[],sb=course==='shibu',ld=course==='ladder';
-  const la=ladd.rec[ladd.stage]||[];
-  const label=ld?`${ladd.stage}：${LD_ST[ladd.stage].n}`+(la.length?`<small>直近${la.reduce((x,y)=>x+y[0],0)}/${la.length}・平均${(la.reduce((x,y)=>x+y[1],0)/la.length).toFixed(1)}秒</small>`:''):sb?(shibu.stage===7?`ミックス（ステップ${sbCur}）`:`${shibu.stage}：${SB_STAGES[shibu.stage].n}`)+(a.length?`<small>直近${a.reduce((x,y)=>x+y,0)}/${a.length}</small>`:''):(scoreKind==='tenpai'?'聴牌形：何を引いたら何点':'アガリ形');
-  const bar=`<div class="crs"><div class="seg crsseg" role="group" aria-label="コース"><button type="button" data-course="normal" aria-pressed="${!sb&&!ld}">通常</button><button type="button" data-course="shibu" aria-pressed="${sb}">渋川</button><button type="button" data-course="ladder" aria-pressed="${ld}">はしご</button></div><button type="button" class="menutg" data-menu aria-expanded="${menuOpen}"><span class="sbname">${label}</span><span class="chev" aria-hidden="true">${menuOpen?'▲':'▼'}</span></button>`
-    +(sb||ld?`<span class="sbbtns"><button type="button" class="sbhelp em" data-lesson aria-label="解説">📖</button><button type="button" class="sbhelp" data-ref aria-label="早見表">📋</button></span>`:'')+'</div>';
+  const a=shibu.rec[shibu.stage]||[],sb=course==='shibu';
+  const label=sb?(shibu.stage===7?`ミックス（ステップ${sbCur}）`:`${shibu.stage}：${SB_STAGES[shibu.stage].n}`)+(a.length?`<small>直近${a.reduce((x,y)=>x+y,0)}/${a.length}</small>`:''):(scoreKind==='tenpai'?'聴牌形：何を引いたら何点':'アガリ形');
+  const bar=`<div class="crs"><div class="seg crsseg" role="group" aria-label="コース"><button type="button" data-course="normal" aria-pressed="${!sb}">通常</button><button type="button" data-course="shibu" aria-pressed="${sb}">渋川式</button></div><button type="button" class="menutg" data-menu aria-expanded="${menuOpen}"><span class="sbname">${label}</span><span class="chev" aria-hidden="true">${menuOpen?'▲':'▼'}</span></button>`
+    +(sb?`<span class="sbbtns"><button type="button" class="sbhelp em" data-lesson aria-label="解説">📖</button><button type="button" class="sbhelp" data-ref aria-label="早見表">📋</button><button type="button" class="sbhelp" data-sbhelp aria-label="渋川式とは">？</button></span>`:'')+'</div>';
   if(!menuOpen)return bar;
   return bar+`<div class="menubody">`
-    +(ld?`<div class="stg ld">${[1,2,3,4,5,6].map(i=>`<button type="button" data-lstage="${i}" aria-pressed="${ladd.stage===i}">${ladd.cl[i]?'✓':i}<small>${LD_ST[i].s}</small></button>`).join('')}</div><div class="crs"><button type="button" class="sbhelp" data-ldguide>はしご式とは？</button></div>`:'')
-    +(!sb&&!ld?`<div class="crs"><span class="mlab">出題</span><div class="seg" role="group" aria-label="出題の形"><button type="button" data-skind="agari" aria-pressed="${scoreKind==='agari'}">アガリ形</button><button type="button" data-skind="tenpai" aria-pressed="${scoreKind==='tenpai'}">聴牌形（何を引いたら何点）</button></div></div>`:'')
-    +(sb?`<div class="crs"><button type="button" class="sbhelp" data-sbhelp>渋川式とは？</button></div><div class="stg">${[1,2,3,4,5,6,7].map(i=>`<button type="button" class="${i===7?'mx':''}" data-stage="${i}" aria-pressed="${shibu.stage===i}">${i===7?'🔀':shibu.cl[i]?'✓':i}<small>${SB_STAGES[i].s}</small></button>`).join('')}</div>`
+    +(!sb?`<div class="crs"><span class="mlab">出題</span><div class="seg" role="group" aria-label="出題の形"><button type="button" data-skind="agari" aria-pressed="${scoreKind==='agari'}">アガリ形</button><button type="button" data-skind="tenpai" aria-pressed="${scoreKind==='tenpai'}">聴牌形（何を引いたら何点）</button></div></div>`:'')
+    +(sb?`<div class="stg">${[1,2,3,4,5,6,7].map(i=>`<button type="button" class="${i===7?'mx':''}" data-stage="${i}" aria-pressed="${shibu.stage===i}">${i===7?'🔀':shibu.cl[i]?'✓':i}<small>${SB_STAGES[i].s}</small></button>`).join('')}</div>`
       +((shibu.stage<=4||(shibu.stage===7&&shibu.mix.some(i=>i<=4)))?`<div class="ykset"><span>翻の出し方${shibu.stage===7?'（ステップ1〜4）':''}</span><div class="seg" role="group" aria-label="翻の出し方">${[['han','翻数'],['yaku','役名'],['mix','混ぜる']].map(([v,l])=>`<button type="button" data-disp="${v}" aria-pressed="${(shibu.disp||'han')===v}">${l}</button>`).join('')}</div></div>`:'')
       +(shibu.stage===7?`<div class="mixsel"><span>出題</span>${[1,2,3,4,5,6].map(i=>`<button type="button" data-mix="${i}" aria-pressed="${shibu.mix.includes(i)}" aria-label="ステップ${i} ${SB_STAGES[i].n}">${i}<small>${SB_STAGES[i].s}</small></button>`).join('')}</div>`:''):'')
     +'</div>';
 }
 function setMenu(o){menuOpen=o;LS.set('menuOpen',o);}
 // メニューの開閉だけなら、問題は作り直さずに今の画面を描き直す
-function redrawQ(){if(!Q)return next();if(Q.sb==='card')sbDrawCard();else if(Q.sb==='steps')sbDrawSteps();else if(Q.sb==='total')sbDrawTotal();else if(Q.type==='tenpai')drawTenpai();else if(Q.type==='ldcard')ldDrawCard();else if(Q.type==='ldfu')ldDrawFu();else if(mode==='score')drawScore();else next();}
+function redrawQ(){if(!Q)return next();if(Q.sb==='card')sbDrawCard();else if(Q.sb==='steps')sbDrawSteps();else if(Q.sb==='total')sbDrawTotal();else if(Q.type==='tenpai')drawTenpai();else if(mode==='score')drawScore();else next();}
 function bindCourse(){
   root.querySelectorAll('[data-menu]').forEach(b=>b.onclick=()=>{setMenu(!menuOpen);redrawQ();});
-  root.querySelectorAll('[data-course]').forEach(b=>b.onclick=()=>{if(course===b.dataset.course)return;course=b.dataset.course;LS.set('course',course);if(course!=='shibu')setMenu(false);next();});
+  root.querySelectorAll('[data-course]').forEach(b=>b.onclick=()=>{if(course===b.dataset.course)return;course=b.dataset.course;LS.set('course',course);if(course==='normal')setMenu(false);next();});
   root.querySelectorAll('[data-stage]').forEach(b=>b.onclick=()=>{shibu.stage=+b.dataset.stage;saveSb();if(shibu.stage!==7)setMenu(false);next();});
   root.querySelectorAll('[data-skind]').forEach(b=>b.onclick=()=>{if(scoreKind===b.dataset.skind)return;scoreKind=b.dataset.skind;LS.set('scoreKind',scoreKind);setMenu(false);next();});
   root.querySelectorAll('[data-disp]').forEach(b=>b.onclick=()=>{if((shibu.disp||'han')===b.dataset.disp)return;shibu.disp=b.dataset.disp;saveSb();next();});
-  root.querySelectorAll('[data-lesson]').forEach(b=>b.onclick=()=>course==='ladder'?ldLesson(ladd.stage):openTutorial(shibu.stage===7?sbCur:shibu.stage));
-  root.querySelectorAll('[data-ref]').forEach(b=>b.onclick=()=>course==='ladder'?openLdRef():openRef());
-  root.querySelectorAll('[data-lstage]').forEach(b=>b.onclick=()=>{ladd.stage=+b.dataset.lstage;saveLd();setMenu(false);next();});
-  root.querySelectorAll('[data-ldguide]').forEach(b=>b.onclick=()=>openSheet(ldGuide()+`<button class="primary" type="button" id="cls">閉じる</button>`,()=>{$('#cls').onclick=closeSheet;}));
+  root.querySelectorAll('[data-lesson]').forEach(b=>b.onclick=()=>openTutorial(shibu.stage===7?sbCur:shibu.stage));
+  root.querySelectorAll('[data-ref]').forEach(b=>b.onclick=openRef);
   root.querySelectorAll('[data-mix]').forEach(b=>b.onclick=()=>{
     const i=+b.dataset.mix,on=shibu.mix.includes(i);
     if(on&&shibu.mix.length===1)return; // 最低1つは残す
@@ -3433,8 +3216,6 @@ function rStr(r){
 const RULESTR=()=>`ルール：喰いタン${rules.kuitan?'あり':'なし'}、切り上げ満貫${rules.kiriage?'あり':'なし'}、ツモ平和${rules.tsumoPinfu?'あり':'なし'}、連風牌の雀頭${rules.renpu}符`;
 function aiContext(){
   const q=Q;if(!q)return '';
-  if(q.type==='ldcard'){const c=q.card,u=unitOf(c.fu,c.h);return `【問題】はしご式（単位＝符の十の位×2を翻の数だけ。単位ごとの点数を1本のはしごで覚える方式）の${c.st===1?'単位づくり：'+c.fu+'符'+c.h+'翻の単位は？':LD_TYPE(c.st===2?false:c.d,c.st===2?false:c.ts)+'・'+c.fu+'符'+c.h+'翻（単位'+u+'）は何点？'}\n${RULESTR()}\n【正解】${q.ans}\n【ユーザーの答え】${q.sel}`;}
-  if(q.type==='ldfu')return `【問題】この手は何符？\n手牌：${handStr(q.ctx.conc)}（和了牌 ${tLabel(q.ctx.win)}）\n${ctxStr(q.ctx)}\n【アプリが計算した正解】${rStr(q.r)}\n【ユーザーの答え】${q.sel}符`;
   if(q.type==='tenpai')return `【問題】聴牌形：どの牌でアガったら何点か\n手牌（13枚・副露除く）：${handStr(q.ctx.conc)}\n${ctxStr(q.ctx)}\n${RULESTR()}\n【アプリが計算した正解】\n${q.rows.map(x=>`${tLabel(x.t)}：${rStr(x.r)}`).join('\n')}\n【ユーザーの答え】\n${q.rows.map((x,i)=>`${tLabel(x.t)}：${q.sel[i]}`).join('\n')}`;
   if(q.type==='score'&&q.sb==='card'){const c=q.card,P=SB_PAT[c.p];return `【問題】渋川式の暗記カード：${c.d?'親':'子'}・${P.n}${P.tbl?'（'+P.tbl+'の表）':''}・${c.h}翻は何点？`+(q.yk?`\n（翻数のかわりに役名で出題：${q.yk.ys.map(y=>y.n).join('・')}${q.yk.open?'・鳴きあり':''}）`:'')+`\n${RULESTR()}\n【正解】${q.ans}\n【ユーザーの答え】${q.sel}`;}
   if(q.type==='score'&&(q.sb==='steps'||q.sb==='total')){
@@ -3532,7 +3313,7 @@ function openGuide(){
       <li>まず向聴数を戻さない打牌を選び、その中で受け入れが一番広いものを選ぶ</li></ul></div>
       <p class="sub">役・打点・安全度は考えていないので、実戦では状況で正解が変わることもあります。</p>`
   };
-  openSheet((mode==='score'&&course==='shibu'?shibuGuide():mode==='score'&&course==='ladder'?ldGuide():g[mode])+`<button class="primary" type="button" id="cls">閉じる</button>`,()=>$('#cls').onclick=closeSheet);
+  openSheet((mode==='score'&&course==='shibu'?shibuGuide():g[mode])+`<button class="primary" type="button" id="cls">閉じる</button>`,()=>$('#cls').onclick=closeSheet);
 }
 const SETS=[
   ['kuitan','喰いタン','副露した手でも断幺九を認める',[['あり',true],['なし',false]]],
