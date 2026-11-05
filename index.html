@@ -452,7 +452,7 @@ button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
 .act .ghost2{flex:0 0 34%;background:var(--surface);color:var(--ink);border:1px solid var(--line);font-size:15px}
 .primary{width:100%;min-height:56px;border:0;border-radius:14px;background:var(--felt);color:var(--felt-ink);font-size:17px;font-weight:700;letter-spacing:.04em}
 .primary:disabled{opacity:.38;cursor:default}
-.tabbar{flex:none;display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);padding-block:4px 6px}
+.tabbar{flex:none;display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);padding-block:4px 6px}
 .tabbar button{border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;font-size:11px;white-space:nowrap;font-weight:700;color:var(--muted);min-height:54px;border-radius:12px}
 .tabbar svg{width:24px;height:24px}
 .tabbar button[aria-selected="true"]{color:var(--felt)}
@@ -547,6 +547,17 @@ button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
 .lq{border:1px solid var(--line);border-radius:10px;padding:6px 10px;margin:6px 0}
 .lq summary{font-weight:700;cursor:pointer}
 .lq div{margin-top:6px}
+.app.aimode .act{display:none}
+.aichat{display:flex;flex-direction:column;gap:8px}
+.aihome{border:1px solid var(--line);border-radius:14px;padding:10px 12px;background:var(--surface);display:flex;flex-direction:column;gap:6px}
+.aih{margin:0;font-size:14px}
+.aist{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center}
+.aist b{display:block;font-size:20px;font-variant-numeric:tabular-nums}
+.aist small{font-size:11px;color:var(--muted);font-weight:700}
+.aichat .aimsg{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 10px;font-size:14px;line-height:1.7;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.aichat .aime{align-self:flex-end;background:var(--sel);color:var(--sel-ink);border-radius:12px;padding:6px 10px;font-size:14px;max-width:85%}
+.aichips{display:flex;flex-wrap:wrap;gap:6px}
+.aichip{border:1px solid var(--sel);background:transparent;color:var(--ink);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700;min-height:36px}
 .sumtiles{display:inline-flex;gap:1px;vertical-align:middle;--tw:20px}
 .pinwait{display:flex;align-items:center;gap:8px;margin-top:6px}
 .pinwait>span{flex:none;font-size:11px;font-weight:700;color:var(--felt-ink)}
@@ -732,6 +743,7 @@ button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
     <button role="tab" data-mode="wait" type="button"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.6"/><circle cx="12" cy="17" r=".6" fill="currentColor"/></svg></span>自分の待ち</button>
     <button role="tab" data-mode="read" type="button"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="2.8"/></svg></span>相手の待ち</button>
     <button role="tab" data-mode="kiru" type="button"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="9" width="8" height="12" rx="2"/><rect x="13" y="6" width="8" height="12" rx="2" transform="rotate(12 17 12)"/><path d="M17 2.5v1.5"/></svg></span>何切る</button>
+    <button role="tab" data-mode="ai" type="button"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16v10H10l-4.5 3.5V15.5H4z"/><path d="M8.5 10.5h.01M12 10.5h.01M15.5 10.5h.01"/></svg></span>AI相談</button>
   </nav>
 </div>
 <div class="sheet" id="sheet" hidden>
@@ -1481,7 +1493,7 @@ const LS={get(k,d){try{const v=localStorage.getItem('pairi:'+k);return v?JSON.pa
   set(k,v){try{localStorage.setItem('pairi:'+k,JSON.stringify(v));}catch(e){}}};
 const DEF={kuitan:true,kiriage:false,renpu:2,tsumoPinfu:true,openQ:true};
 let rules=Object.assign({},DEF,LS.get('rules',{}));rules.kiriage=shared.getKiriage();
-let mode=LS.get('mode','score');if(!['score','wait','read','kiru'].includes(mode))mode='score';
+let mode=LS.get('mode','score');if(!['score','wait','read','kiru','ai'].includes(mode))mode='score';
 let levels=Object.assign({score:1,wait:1,read:1,kiru:1},LS.get('levels',{}));
 let stats=LS.get('stats2',{});
 let Q=null;
@@ -1507,6 +1519,7 @@ function wGroup(){return mode==='score'?(course==='shibu'?'shibu':scoreKind==='t
 function weakAdd(tags){const g=weak[wGroup()]||(weak[wGroup()]={});new Set(tags).forEach(t=>{g[t]=Math.min(8,(g[t]||0)+1);});saveWeak();}
 function weakDecay(tags){const g=weak[wGroup()];if(!g)return;new Set(tags).forEach(t=>{if(g[t]){g[t]*=0.6;if(g[t]<0.3)delete g[t];}});saveWeak();}
 function pickWeakTag(){
+  if(aiDrill&&aiDrill.focus&&aiDrill.focus.length)return pick(aiDrill.focus);
   const g=weak[wGroup()]||{},ks=Object.keys(g);if(!ks.length)return null;
   const tot=ks.reduce((a,k)=>a+g[k],0);
   // 苦手が多いほど、苦手を含む問題の割合を上げる（最大65%）。特訓中は必ず苦手を狙う
@@ -1515,10 +1528,10 @@ function pickWeakTag(){
 }
 function biasedGen(gen,tagsOf){
   const want=pickWeakTag();let first=null;const t0=performance.now();
-  for(let i=0;i<(train?90:40);i++){
+  for(let i=0;i<(train||aiDrill?90:40);i++){
     const q=gen();if(!q)continue;if(!first)first=q;if(!want)return q;
     if(tagsOf(q).includes(want)){q._weak=want;return q;}
-    if(performance.now()-t0>(train?450:200))break;
+    if(performance.now()-t0>(train||aiDrill?450:200))break;
   }
   return first;
 }
@@ -1593,6 +1606,7 @@ function trainBadge(){
 const TAGCAT={y:'役',f:'符',p:'点数',a:'アガリ方',w:'待ち',k:'何切る',u:'有効牌',r:'読み',t:'聴牌形'};
 const tagLabel=t=>`${TAGCAT[t[0]]||''}：${t.slice(2)}`;
 function revBadge(){
+  if(aiDrill&&mode!=='ai')return aiBadge();
   if(train)return trainBadge();
   if(!Q||Q.done&&!Q._review&&!Q._weak)return '';
   if(Q._review)return `<span class="revb">🔁 ${Q._review==='same'?'さっき間違えた問題':Q.sb==='card'?'類題（表の近い欄）':'類題（形は同じ・牌を入れ替え）'}</span>`;
@@ -1634,12 +1648,13 @@ function scoreTagsBy(ctx,r){
 const scoreAllTags=(ctx,r)=>{const T=scoreTagsBy(ctx,r);return T.h.concat(T.f,T.p);};
 function cur(){const k=(mode==='score'&&course==='shibu')?'shibu'+shibu.stage:mode+(mode==='read'?(typeof readKind!=='undefined'?readKind:'hit'):mode==='score'&&scoreKind==='tenpai'?'tenpai':mode==='kiru'&&kiruKind==='uke'?'uke':mode==='wait'&&waitN!==13?'n'+waitN:'')+levels[mode];return stats[k]||(stats[k]={ok:0,n:0,st:0});}
 function stHTML(){const s=cur();return `<span class="st" id="st">${revBadge()}<b>${s.ok}</b>/${s.n}問 · 連続<b>${s.st}</b></span>`;}
-function record(ok){trainHook(ok);const s=cur();s.n++;if(ok){s.ok++;s.st++;}else s.st=0;LS.set('stats2',stats);const e=$('#st');if(e)e.outerHTML=stHTML();}
+function record(ok){trainHook(ok);histAdd(ok);const s=cur();s.n++;if(ok){s.ok++;s.st++;}else s.st=0;LS.set('stats2',stats);const e=$('#st');if(e)e.outerHTML=stHTML();}
 
 function setMode(m){
   mode=m;LS.set('mode',m);
   root.querySelectorAll('.tabbar button').forEach(b=>b.setAttribute('aria-selected',b.dataset.mode===m));
-  $('#mname').textContent=({score:'点数計算',wait:'自分の待ち',read:'相手の待ち',kiru:'何切る'})[m];
+  $('#mname').textContent=({score:'点数計算',wait:'自分の待ち',read:'相手の待ち',kiru:'何切る',ai:'AI相談'})[m];
+  root.querySelector('.app').classList.toggle('aimode',m==='ai');
   drawLv();next();
 }
 function drawLv(){root.querySelectorAll('#lv button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.lv===levels[mode]));}
@@ -1648,6 +1663,7 @@ function next(){
   $('#aiAct').hidden=true;$('#aiQ').hidden=true;
   ex.hidden=true;exT.hidden=true;
   root.querySelector('#lv').hidden=mode==='score'&&course==='shibu';
+  if(mode==='ai'){root.querySelector('#lv').hidden=true;Q=null;drawAI();return;}
   const k=qKey();qCount[k]=(qCount[k]||0)+1;
   if(mode==='score')(course==='shibu'?newShibu():newScore());else if(mode==='wait')newWait();else if(mode==='read')newRead();else newKiru();
   view.scrollTop=0;
@@ -1656,7 +1672,7 @@ function setGo(label,enabled,fn){go.textContent=label;go.disabled=!enabled;go.on
 $('#skip').onclick=()=>next();
 function openEx(ok,sum,body,pin){
   $('#exV').textContent=ok?'正解':'不正解';$('#exV').className='verdict '+(ok?'ok':'ng');
-  $('#exS').innerHTML=sum+(Q&&Q._trainMsg?`<br><b class="trmsg">${Q._trainMsg}</b>`:'');$('#exB').innerHTML=aiBoxHTML()+body;bindAI();$('#exB').scrollTop=0;
+  $('#exS').innerHTML=sum+(Q&&Q._trainMsg?`<br><b class="trmsg">${Q._trainMsg}</b>`:'')+(Q&&Q._aiMsg?`<br><b class="trmsg">${Q._aiMsg}</b>`:'');$('#exS').querySelectorAll('[data-goai]').forEach(b=>b.onclick=()=>setMode('ai'));$('#exB').innerHTML=aiBoxHTML()+body;bindAI();$('#exB').scrollTop=0;
   $('#exP').innerHTML=pin?`<div class="felt pinfelt">${pin}</div>`:'';$('#exP').hidden=!pin;
   ex.hidden=false;exT.hidden=false;exT.textContent='解説を閉じる';
 }
@@ -3346,7 +3362,7 @@ function kiruBody(){
 // ===== AIに詳しく聞く（Claudeのアーティファクトとして開いたときだけ） =====
 // アプリが計算した正解と内訳をそのまま渡し、AIには「なぜ違ったか・どう覚えるか」だけを説明させる（答えは再計算させない）
 let AI=null,aiCtl=null;
-try{if(window.claude&&typeof window.claude.use==='function')window.claude.use('sample').then(ns=>{AI=ns||null;}).catch(()=>{AI=null;});}catch(e){AI=null;}
+try{if(window.claude&&typeof window.claude.use==='function')window.claude.use('sample').then(ns=>{AI=ns||null;if(AI&&mode==='ai')drawAI();}).catch(()=>{AI=null;});}catch(e){AI=null;}
 function handStr(c){
   const out=[];
   ['m','p','s'].forEach((x,i)=>{let t='';for(let n=0;n<9;n++)t+=String(n+1).repeat(c[i*9+n]||0);if(t)out.push(t+x);});
@@ -3415,6 +3431,153 @@ function bindAI(){
     msgs.push({role:'user',content:v+'\n（さっきと同じ問題についての質問です。同じく短い箇条書きで答えてください）'});run(false);};
 }
 
+
+// ===== AI相談モード =====
+// 間違えた問題の記録（hist）・苦手タグ（weak）・間違いノート（notes）・成績（stats）をAIに渡し、相談・クイズ・練習の組み立てをしてもらう。
+// AIが練習を組むときは ACTION 行でアプリに指示し、問題の作成と採点はアプリが正確に行う。CHOICES 行は次に押せる選択肢。
+let hist=LS.get('hist',[]);if(!Array.isArray(hist))hist=[];
+let aiChat=Object.assign({view:[],msgs:[]},LS.get('aiChat',{}));
+let aiDrill=LS.get('aiDrill',null);
+const saveAiChat=()=>{aiChat.view=aiChat.view.slice(-40);aiChat.msgs=aiChat.msgs.slice(-24);LS.set('aiChat',aiChat);};
+const GNAME={score:'点数計算',tenpai:'聴牌形',shibu:'渋川式',wait:'自分の待ち',read:'相手の待ち',kirucut:'何切る',kiruuke:'有効牌'};
+function histAdd(ok){
+  if(mode==='ai')return;
+  if(aiDrill){aiDrill.done++;if(ok)aiDrill.ok++;}
+  if(!ok){let d='';try{d=aiContext();}catch(e){}
+    hist.push({t:Date.now(),g:wGroup(),d:String(d||qKey()).slice(0,600),ai:!!aiDrill});if(hist.length>80)hist=hist.slice(-80);LS.set('hist',hist);}
+  if(aiDrill){
+    if(aiDrill.done>=aiDrill.count){
+      const r={label:aiDrill.label,ok:aiDrill.ok,count:aiDrill.count,t:Date.now()};aiChat.result=r;saveAiChat();
+      Q._aiMsg=`🤖 AI練習「${esc(r.label)}」おわり：${r.ok}/${r.count}問正解　<button type="button" class="backstep" data-goai>AI相談に戻る</button>`;
+      aiDrill=null;
+    }
+    LS.set('aiDrill',aiDrill);
+  }
+}
+function aiBadge(){return aiDrill&&Q&&mode!=='ai'?`<span class="revb tr">🤖${Math.min(aiDrill.done+(Q.done?0:1),aiDrill.count)}/${aiDrill.count}</span>`:'';}
+const fmtD=t=>{const d=new Date(t);return `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;};
+function weakTop(n){return Object.entries(weak).flatMap(([g,o])=>Object.entries(o).map(([t,v])=>({g,t,v}))).sort((a,b)=>b.v-a.v).slice(0,n);}
+function statSum(){let n=0,ok=0;Object.values(stats).forEach(v=>{n+=v.n||0;ok+=v.ok||0;});return{n,ok};}
+const TAG_CATALOG=`役(y:)：立直・門前清自摸和・平和・断幺九・一盃口・役牌・場風・自風・三色同順・一気通貫・混全帯幺九・純全帯幺九・対々和・三暗刻・小三元・混老頭・混一色・清一色・七対子・鳴いて下がる役
+符(f:)：七対子・平和ツモ・平和ロン・待ちの符・雀頭の符・槓子・幺九牌の刻子・中張牌の刻子・鳴きの30符・50符以上
+点数(p:)：子のロン・子のツモ・親のロン・親のツモ・満貫以上・30符・40符・50符・60符
+アガリ方(a:)：ツモ・門前ロン・鳴いてロン・平和ツモ・平和ロン・七対子ロン・七対子ツモ（渋川式の総合のみ）
+待ち(w:)：両面・嵌張・辺張・単騎・シャンポン・清一色・3種以上・七対子
+何切る(k:)：聴牌・1向聴・2向聴・同じ枚数の比較／有効牌(u:)：聴牌・1向聴・2向聴
+タグは「y:混一色」「f:幺九牌の刻子」「w:嵌張」のように接頭辞つきで書く`;
+function aiProfile(){
+  const S=statSum(),wt=weakTop(15),nt=Object.entries(notes).filter(([g,a])=>a.length).map(([g,a])=>`${GNAME[g]||g} ${a.length}問`).join('、')||'なし';
+  const st=Object.entries(stats).filter(([k,v])=>v.n).map(([k,v])=>`${k} ${v.ok}/${v.n}`).join('、')||'まだなし';
+  return `【生徒の記録】
+・解いた数：${S.n}問（正解${S.ok}問）
+・成績（キー別 正解/回答。キーの意味：scoreN=通常の点数計算レベルN、scoretenpaiN=聴牌形、shibuN=渋川式ステップN、waitN/waitnXN=待ち（X枚）、readhitN/readsafeN=相手の待ち、kiruN=何切る、kiruukeN=有効牌）：${st}
+・苦手タグ（数字が大きいほど苦手）：${wt.map(x=>`${GNAME[x.g]||x.g}｜${x.t}（${x.v.toFixed(1)}）`).join('、')||'まだなし'}
+・間違いノートの残り：${nt}
+・最近の間違い（新しい順・最大8件）：
+${hist.slice(-8).reverse().map(h=>`― ${fmtD(h.t)}［${GNAME[h.g]||h.g}］\n${h.d}`).join('\n')||'まだなし'}
+・いまの設定：渋川式ステップ${shibu.stage}、通常レベル${levels.score}、${RULESTR()}`+(aiChat.result?`\n・直前のAI練習：「${aiChat.result.label}」${aiChat.result.ok}/${aiChat.result.count}問正解`:'');
+}
+const AI_SYS=`あなたは麻雀学習アプリ「牌理ドリル」に組み込まれた、麻雀（日本のリーチ麻雀）の家庭教師です。生徒の目標は点数計算のマスターで、主に「渋川式」（アガリ方で表を選び、翻で引き、符で段階を上げる覚え方）で学習しています。
+話し方：やさしく短く。初心者にもわかる日本語。見出しは使わず、箇条書きは「・」で。1回の返答は400字以内を目安。
+できること：
+1. 相談・分析・解説：下の【生徒の記録】をもとに、苦手の原因や覚え方を具体的に。
+2. チャットでのクイズ：1問ずつ出し、答えの候補を CHOICES で示す。生徒が答えたら正誤と短い解説、そして次の問題へ。点数や符の数値は正確に。複雑な計算が必要な問題はアプリの練習（ACTION）に任せる。
+3. アプリの練習を組む：ACTION 行を書くと、アプリが条件どおりの問題を自動で作って採点します（数値の正しさはアプリが保証）。苦手克服には積極的に使う。
+返答の最後に、必要に応じて次の行を付けてください（それぞれ1行・正しいJSON）：
+ACTION: {"label":"10字程度の名前","mode":"score|wait|read|kiru","course":"normal|shibu","stage":1〜7,"level":1〜3,"kind":"agari|tenpai|hit|safe|cut|uke","tiles":4|7|10|13,"focus":["タグ"],"count":5}
+　mode=score：course=shibu なら stage（1満貫以上 2基本の3つの表 3平和・七対子 4親の点数 5符で段階アップ 6総合 7ミックス）、course=normal なら level と kind（agari＝アガリ形／tenpai＝何を引いたら何点）。
+　mode=wait：level と tiles。mode=read：level と kind（hit＝当たり／safe＝安全牌）。mode=kiru：level と kind（cut＝何切る／uke＝有効牌）。
+　focus は苦手タグを集中して出すための指定（使えるタグは下の一覧から。不要なら空配列）。count は3〜15。
+CHOICES: ["次に生徒が押しそうな選択肢","2〜4個","各15字以内"]
+CHOICES は毎回必ず付けて、生徒が何をしたいかを察した次の一手を提案してください（クイズ中は答えの候補を入れる）。ACTION と CHOICES の行は画面ではボタンになるので、本文で「下のボタン」などと案内してかまいません。
+${TAG_CATALOG}`;
+function aiParse(text){
+  let act=null,ch=null;const body=[];
+  String(text).split('\n').forEach(l=>{
+    const m=l.match(/^\s*[*・-]?\s*(ACTION|CHOICES)\s*[:：]\s*(.+)$/);
+    if(m){try{const v=JSON.parse(m[2].trim().replace(/^`+|`+$/g,''));if(m[1]==='ACTION')act=Array.isArray(v)?v[0]:v;else if(Array.isArray(v))ch=v.map(String).filter(Boolean).slice(0,4);}catch(e){}}
+    else body.push(l);
+  });
+  return{body:body.join('\n').trim(),act,ch};
+}
+function aiActLabel(a){const n={score:'点数',wait:'待ち',read:'読み',kiru:'何切る'}[a.mode]||'';return `▶ ${esc(a.label||'練習')}（${n}・${Math.max(3,Math.min(15,+a.count||5))}問）`;}
+function startAIDrill(a){
+  const M=['score','wait','read','kiru'];if(!a||!M.includes(a.mode))return;
+  const lv=Math.max(1,Math.min(3,+a.level||levels[a.mode]||1));
+  if(a.mode==='score'){
+    course=a.course==='shibu'?'shibu':'normal';LS.set('course',course);
+    if(course==='shibu'){const st=+a.stage;if(st>=1&&st<=7){shibu.stage=st;saveSb();}}
+    else{levels.score=lv;scoreKind=a.kind==='tenpai'?'tenpai':'agari';LS.set('scoreKind',scoreKind);}
+  }else levels[a.mode]=lv;
+  if(a.mode==='wait'&&[4,7,10,13].includes(+a.tiles)){waitN=+a.tiles;LS.set('waitN',waitN);}
+  if(a.mode==='read'&&['hit','safe'].includes(a.kind)){readKind=a.kind;LS.set('readKind',readKind);}
+  if(a.mode==='kiru'&&['cut','uke'].includes(a.kind)){kiruKind=a.kind;LS.set('kiruKind',kiruKind);}
+  LS.set('levels',levels);
+  aiDrill={label:String(a.label||'AI練習').slice(0,20),focus:(Array.isArray(a.focus)?a.focus:[]).map(String).filter(t=>/^[yfpawkur]:/.test(t)).slice(0,6),count:Math.max(3,Math.min(15,+a.count||5)),done:0,ok:0};
+  LS.set('aiDrill',aiDrill);
+  if(train){train=false;LS.set('train',false);$('#trainBtn').setAttribute('aria-pressed','false');}
+  setMode(a.mode);
+}
+function aiHome(){
+  const S=statSum(),wt=weakTop(3),hs=hist.slice(-3).reverse();
+  return `<div class="aihome"><p class="aih">🤖 <b>AI相談</b>　苦手の分析・クイズ・練習メニューづくりができます</p>
+    <div class="aist"><div><b>${S.n}</b><small>解いた問題</small></div><div><b>${S.n?Math.round(S.ok/S.n*100):0}%</b><small>正解率</small></div><div><b>${hist.length}</b><small>間違いの記録</small></div></div>
+    ${wt.length?`<p class="sub">苦手トップ：${wt.map(x=>`<span class="tag">${GNAME[x.g]||x.g}｜${tagLabel(x.t)}</span>`).join(' ')}</p>`:'<p class="sub">まだ苦手の記録はありません。ふつうに解いて間違えると、ここにたまります。</p>'}
+    ${hs.length?`<p class="sub">最近の間違い：${hs.map(h=>`${fmtD(h.t)} ${GNAME[h.g]||h.g}`).join('、')}</p>`:''}</div>`;
+}
+function aiDefaultChoices(){
+  const wt=weakTop(1)[0],c=[];
+  if(aiChat.result)c.push('さっきのAI練習をふり返って');
+  c.push('苦手を分析して');
+  if(wt)c.push(`「${wt.t.slice(2)}」を克服したい`);
+  c.push('今日の練習メニューを作って');
+  c.push('選択式のクイズを出して');
+  if(hist.length)c.push('最近の間違いを解説して');
+  c.push('渋川式の段階のコツを教えて');
+  return c.slice(0,5);
+}
+let aiBusy=false;
+function drawAI(){
+  const has=!!AI;
+  const last=aiChat.view[aiChat.view.length-1];
+  const chips=aiBusy?[]:[...new Set((aiChat.result?['さっきのAI練習をふり返って']:[]).concat(last&&last.role==='ai'&&last.ch&&last.ch.length?last.ch:aiDefaultChoices()))].slice(0,5);
+  render(`<div class="qhead"><p class="prompt">AI相談</p>${aiChat.view.length?'<button type="button" class="mini-btn" data-ainew>新しい相談</button>':''}</div>
+    <div class="aichat" id="aichat">${aiHome()}${aiChat.view.map((v,i)=>v.role==='me'?`<div class="aime">${esc(v.t)}</div>`
+      :`<div class="aimsg">${aiFmt(v.t)}${v.act?`<button type="button" class="aibtn s" data-aiact="${i}">${aiActLabel(v.act)}</button>`:''}${v.tier?`<small class="aitier">回答：${TIERN[v.tier]||'Claude'}</small>`:''}</div>`).join('')}
+      ${aiBusy?'<div class="aimsg">考えています…</div>':''}
+      ${has?'':'<div class="aimsg">AI相談は、Claudeのアーティファクト版「牌理ドリル（AI解説つき）」で使えます。このアプリでは記録の確認だけできます（記録はアプリごとに別です）。</div>'}</div>
+<!--CTRL-->
+    ${has?`<div class="aichips">${chips.map(c=>`<button type="button" class="aichip" data-aichip="${esc(c)}">${esc(c)}</button>`).join('')}</div>
+    <form class="aiq" id="aiQ2"><input type="text" id="aiIn2" placeholder="自由に相談（例：40符の表がすぐ出ない）" autocomplete="off" ${aiBusy?'disabled':''}><button type="submit" class="aibtn s" ${aiBusy?'disabled':''}>送る</button></form>`:''}`);
+  const box=$('#aichat');if(box)setTimeout(()=>{view.scrollTop=view.scrollHeight;},0);
+  root.querySelectorAll('[data-aichip]').forEach(b=>b.onclick=()=>{const t=b.dataset.aichip;if(last&&last.act&&/^(練習を)?(始め|はじめ|スタート)/.test(t))return startAIDrill(last.act);aiSend(t);});
+  root.querySelectorAll('[data-aiact]').forEach(b=>b.onclick=()=>startAIDrill(aiChat.view[+b.dataset.aiact].act));
+  root.querySelectorAll('[data-ainew]').forEach(b=>b.onclick=()=>{aiChat={view:[],msgs:[]};saveAiChat();drawAI();});
+  const f=$('#aiQ2');if(f)f.onsubmit=e=>{e.preventDefault();const v=$('#aiIn2').value.trim();if(v)aiSend(v);};
+}
+async function aiSend(text){
+  if(!AI||aiBusy)return;
+  aiBusy=true;aiChat.view.push({role:'me',t:text});aiChat.msgs.push({role:'user',content:text});saveAiChat();drawAI();
+  if(aiCtl)aiCtl.abort();aiCtl=new AbortController();
+  const input=[{role:'user',content:AI_SYS+'\n\n'+aiProfile()+'\n\n――ここから生徒との会話――'}].concat(aiChat.msgs);
+  let live=null;
+  try{
+    const r=await AI(input,{signal:aiCtl.signal,modelTier:'default',cache:false,onText:({text})=>{
+      if(mode!=='ai')return;if(!live){live=document.createElement('div');live.className='aimsg';const b=$('#aichat');if(b){const t=b.querySelector('.aimsg:last-child');if(t&&t.textContent==='考えています…')t.remove();b.appendChild(live);}}
+      live.innerHTML=aiFmt(aiParse(text).body);view.scrollTop=view.scrollHeight;}});
+    const P=aiParse(r.text);
+    aiChat.msgs.push({role:'assistant',content:r.text});
+    aiChat.view.push({role:'ai',t:P.body||'（返答なし）',act:P.act&&P.act.mode?P.act:null,ch:P.ch,tier:r.modelTierApplied});
+    if(aiChat.result&&/ふり返/.test(text))delete aiChat.result;
+  }catch(e){
+    aiChat.msgs.pop();
+    const m=e&&e.code==='rate_limited'?'AIの利用上限に達しました。しばらく待ってからもう一度送ってください。':e&&e.code==='not_granted'?'AIの利用が許可されていないため使えません。':e&&e.name==='AbortError'||e&&e.code==='cancelled'?null:'AIの返答を取得できませんでした。もう一度送ってください。';
+    if(e&&e.code==='not_granted')AI=null;
+    if(m)aiChat.view.push({role:'ai',t:m});
+  }
+  aiBusy=false;saveAiChat();if(mode==='ai')drawAI();
+}
+
 // ===== おさらい・設定 =====
 const sheet=$('#sheet'),panel=$('#panel');
 function openSheet(html,bind){panel.innerHTML=html;sheet.hidden=false;bind&&bind();panel.scrollTop=0;}
@@ -3463,7 +3626,7 @@ function openGuide(){
       <li>まず向聴数を戻さない打牌を選び、その中で受け入れが一番広いものを選ぶ</li></ul></div>
       <p class="sub">役・打点・安全度は考えていないので、実戦では状況で正解が変わることもあります。</p>`
   };
-  openSheet((mode==='score'&&course==='shibu'?shibuGuide():g[mode])+`<button class="primary" type="button" id="cls">閉じる</button>`,()=>$('#cls').onclick=closeSheet);
+  openSheet((mode==='score'&&course==='shibu'?shibuGuide():g[mode]||g.score)+`<button class="primary" type="button" id="cls">閉じる</button>`,()=>$('#cls').onclick=closeSheet);
 }
 const SETS=[
   ['kuitan','喰いタン','副露した手でも断幺九を認める',[['あり',true],['なし',false]]],
@@ -3488,7 +3651,7 @@ function openSettings(){
   resetArm=false;
   const draw=()=>{
     panel.innerHTML=`<h2>設定</h2>
-      <div class="lvinfo"><h3 class="sub" style="font-weight:700">レベルの目安（${({score:'点数計算',wait:'自分の待ち',read:'相手の待ち',kiru:'何切る'})[mode]}）</h3>${LVINFO[mode].map((t,i)=>`<div><b>${LVN[i+1]}</b><span>${t}</span></div>`).join('')}</div>
+      <div class="lvinfo"><h3 class="sub" style="font-weight:700">${mode==='ai'?'':'レベルの目安（'+({score:'点数計算',wait:'自分の待ち',read:'相手の待ち',kiru:'何切る'})[mode]+'）'}</h3>${(LVINFO[mode]||[]).map((t,i)=>`<div><b>${LVN[i+1]}</b><span>${t}</span></div>`).join('')}</div>
       ${weakListHTML()}
       ${SETS.map(([k,n,dsc,ops])=>`<div class="set"><div><p>${n}</p><small>${dsc}</small></div><div class="seg">${ops.map(([l,v],i)=>`<button type="button" data-k="${k}" data-i="${i}" aria-pressed="${rules[k]===v}">${l}</button>`).join('')}</div></div>`).join('')}
       <button class="primary" type="button" id="cls">閉じて次の問題へ</button>
