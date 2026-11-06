@@ -569,6 +569,11 @@ button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
 .lv button{padding:6px 10px}
 .kindrow .seg.c4{grid-template-columns:repeat(4,1fr)}
 .kindrow .seg.c3{grid-template-columns:repeat(3,1fr)}
+.goro{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}.gch{display:flex;flex-direction:column;align-items:center;border:1px solid var(--line);border-radius:10px;padding:3px 7px;min-width:44px}
+.gch small{font-size:11px;opacity:.75}.gch em{font-style:normal;font-size:10px;font-weight:700}.gch.on{background:var(--accent-soft,#e3f1ea);border-color:var(--accent,#1f6f4a)}
+.fchk{border:1px dashed var(--line);border-radius:10px;padding:6px 10px;margin:6px 0}.fchk ul{list-style:none;padding:0;margin:4px 0}.fchk li{opacity:.6}.fchk li.on{opacity:1;font-weight:700}
+.tipline{background:var(--accent-soft,#e3f1ea);border-radius:10px;padding:6px 10px}
+.vchk{display:block;font-size:12px;color:var(--ok,#1f9d55)}
 .seg button.mk-ok{outline:3px solid var(--ok,#1f9d55);outline-offset:-3px}.seg button.mk-ng{outline:3px solid var(--ng,#d64545);outline-offset:-3px}
 .felt .row.fall{margin-top:6px}.tile.dim{opacity:.4}
 .fvs{display:flex;align-items:center;gap:8px;margin:4px 0}.fvs .row{flex:1}.fvl{font-weight:800;width:1.4em;text-align:center}
@@ -2082,7 +2087,7 @@ function sbCheckCard(){
   }const msg=sbProgress(Q.ok);sbDrawCard();
   const P=SB_PAT[c.p];
   openEx(Q.ok,`${c.d?'親':'子'}・${P.n}・${c.h}翻 → <b>${Q.ans}</b>${msg}`,
-    `${Q.yk?`<div><h3>翻の数え方${Q.yk.open?'（鳴きあり：喰い下がりに注意）':''}</h3><p>${sbYkSum(Q.yk)} ＝ <b>${Q.yk.ys.some(x=>x.ym)?'役満':c.h+'翻'}</b></p></div>`:''}<div><h3>どの表を見るか</h3><p>${sbTip(c.p,c.d)}</p>${c.d?`<p class="sub">${sbDealerTip(c.p,c.h,P.ts)}</p>`:''}</div>
+    `${Q.yk?`<div><h3>翻の数え方${Q.yk.open?'（鳴きあり：喰い下がりに注意）':''}</h3><p>${sbYkSum(Q.yk)} ＝ <b>${Q.yk.ys.some(x=>x.ym)?'役満':c.h+'翻'}</b></p></div>`:''}${sbGoro(c.p,c.d,c.h,Q.ans)}<div><h3>どの表を見るか</h3><p>${sbTip(c.p,c.d)}</p>${c.d?`<p class="sub">${sbDealerTip(c.p,c.h,P.ts)}</p>`:''}</div>
      <div><h3>${sbFamName(c.p)}の表（${c.d?'親':'子'}）</h3>${sbTable(sbFam(c.p),c.d,{p:c.p,h:c.h,mine:Q.ok?null:Q.sel})}
      <p class="sub">青＝正解${Q.ok?'':'　赤枠＝あなたの答え'}</p></div>`);
 }
@@ -2136,7 +2141,9 @@ function sbStepsExplain(Q2){
     <div><h3>段階の決め方</h3><p>${SB_PAT[p].n}は「${B}符の表」が基準。${sbStepRule(ctx.tsumo)}。</p>
     <p>この手は ${x}符 → <b>${st}段階</b>上げて <b>${r.fu}符</b>で計算します。</p>
     ${r.fu<=60&&r.han<=4&&sbPos(p,r.han)>=0?`<p>はしごで見ると、${SB_PAT[p].n}・${r.han}翻の位置から<b>${st}つ右</b>：</p>${sbLadderHTML(ctx.dealer,ctx.tsumo,{from:sbPos(p,r.han),to:Math.min(sbPos(p,r.han)+st,sbLadder(ctx.dealer,ctx.tsumo).length-1)})}`:''}
-    <p class="sub">まず見るところ：カンがあるか、1・9・字牌の暗刻があるか。どちらもなければ、ほとんど段階は上がりません。</p>
+    ${(()=>{const j=fuJudge(r);if(!j)return '';const li=(on,t)=>`<li class="${on?'on':''}">${on?'☑':'☐'} ${t}</li>`;
+      return `<div class="fchk"><b>12符判別法</b>（数える前のチェック）<ul>${li(j.a,'刻子・槓子が2組以上')}${li(j.b,'カンがある')}${li(j.c,'1・9・字牌の暗刻がある')}</ul>
+      <p>${j.any?'当てはまるので、手牌の符を数えて段階を決めます。':(st>0?'どれにも当てはまりませんが、連風牌の雀頭（4符）で例外的に上がっています。':'どれにも当てはまらない → <b>数えなくても0段階</b>（表のまま）。')}</p></div>`;})()}
     ${r.han<=4&&r.fu<=60?`<p>点数：${r.fu}符は「<b>${sbsBorrow(r.fu,ctx.tsumo)}</b>」→ ${r.han}翻で <b>${r.pay.text}</b></p>${SBS_BASE[p]?sbsTable(p,ctx.dealer,{n:st,h:r.han}):''}`:''}
     <p><button type="button" class="backstep" data-sguide>📘 段階の覚え方をくわしく</button></p></div>`;
 }
@@ -2210,6 +2217,9 @@ function sbStepGuide(){
       <tr><td>2〜8の暗刻／1・9・字牌のポン</td><td class="num">4</td></tr>
       <tr><td>2〜8のポン・嵌張/辺張/単騎待ち・役牌の雀頭・ツモ</td><td class="num">2</td></tr></table>
     <p class="sub">覚え方：基本は2。<b>1・9・字なら×2、暗刻なら×2、カンなら×4</b>。ロンで完成した刻子はポン扱い。</p></section>
+  <section><h3>そもそも数える必要がある？（12符判別法）</h3>
+    <div class="lbox">符を数えるのは <b>①刻子・槓子が2組以上 ②カンがある ③1・9・字牌の暗刻がある</b> ときだけ</div>
+    <p>どれにも当てはまらない手は、材料が最大でも10符にしかならないので<b>必ず表のまま</b>です（ツモ2＋愚形2＋役牌の雀頭2＋中張牌の暗刻やポン4＝10）。須藤プロの麻雀入門チャンネルで紹介されている方法で、アプリでランダムな手 約3,900手を調べて例外がないことを確かめています${rules.renpu===4?'（連風牌の雀頭を4符にするルールでは、ダブ風の雀頭で例外が出ることがあります）':''}。</p></section>
   <section><h3>一瞬で判断する目安（計算しない）</h3>
     <table class="lt"><tr><th>見えたもの</th><th>段階</th></tr>
       <tr><td><b>暗槓</b>がある</td><td><b>1段以上</b>確定（1・9・字なら<b>3段</b>）</td></tr>
@@ -3108,6 +3118,8 @@ function waitBody(){
     return `<div class="waitrow"><div class="top">${tileHTML(w,{cls:'win'})}${st}<span class="tag">${info.shapes.map(s=>WAITNAME[s]).join('・')}${info.chiitoi?'（七対子）':''}</span></div><div class="split">${split}</div></div>`;
   }).join('');
   return `${wrong.length?`<p class="sub">選んだけれど待ちではない牌：<span class="sumtiles">${tiles(wrong)}</span></p>`:''}
+    ${(()=>{const hit=Q.waits.filter(w=>Q.sel.has(w)),sj=Q.waits.filter(w=>!Q.sel.has(w)&&w<27&&hit.some(c=>c<27&&Math.floor(c/9)===Math.floor(w/9)&&Math.abs(c-w)%3===0));
+      return sj.length?`<p class="tipline">💡 <b>スジを疑う</b>：見つけた ${[...new Set(hit.filter(c=>sj.some(w=>Math.floor(c/9)===Math.floor(w/9)&&Math.abs(c-w)%3===0)))].map(tLabel).join('・')} のスジにある <b>${sj.map(tLabel).join('・')}</b> も待ちでした。待ちを1つ見つけたら、同じスジ（1-4-7・2-5-8・3-6-9）の牌を手にくっつけて和了形になるか確かめましょう。</p>`:'';})()}
     ${waitHowTo()}
     <div><h3>それぞれの和了形（橙の文字が和了牌を含む面子）</h3>${rows}</div>`;
 }
@@ -3442,6 +3454,7 @@ function openFormGuide(){
     <h3>4枚で2ブロック分の形</h3><p class="sub">${FCTX.two.replace(/<\/?b>/g,'')}とした場合</p>${blk('two')}
     <h3>3枚で1ブロック分の形</h3><p class="sub">${FCTX.one.replace(/<\/?b>/g,'')}とした場合</p>${blk('one')}
     <p class="sub">牌の効率（受け入れ）だけの比較です。聴牌したときの待ちの良さ・役・打点は別に考えます。</p>
+    ${KOTSU.kiru}
     <button class="primary" type="button" id="cls">閉じる</button>`,()=>$('#cls').onclick=closeSheet);
 }
 function fName(f){return Q.hide&&!Q.done?'この形':`【${f.n}】`;}
@@ -3508,6 +3521,62 @@ function formBodyFv(){
   const one=(x,k)=>`<div><h3>${k}：${x.f.n}（${x.uke.length}種${x.cnt}枚）</h3><div class="frow"><div class="row" style="--n:${x.tiles.length+.4}">${tiles(x.tiles)}</div><span class="farr">→</span><div class="uke">${tiles(x.uke)}</div></div><p class="sub">${x.f.p}</p></div>`;
   return `${one(Q.A,'A')}${one(Q.B,'B')}${formRankHTML(Q.A.f,[Q.A.f.id,Q.B.f.id])}
     <p class="sub">残り枚数は、手の中に見えている分（形の牌も含む）を引いた数です。</p>`;
+}
+
+// ===== 動画で学んだコツ（NotebookLMで要約→アプリのエンジンで検証済みのものだけ） =====
+const KOTSU={
+ score:`<h2 style="font-size:17px">🎥 動画で紹介されている近道（アプリで検証済み）</h2><div class="guide"><ul>
+  <li><b>12符判別法</b>（須藤プロの麻雀入門チャンネル）：符を数える必要があるのは <b>①刻子・槓子が2組以上 ②カンがある ③1・9・字牌の暗刻がある</b> ときだけ。どれも無ければ「ツモ・鳴いてロン＝30符、門前ロン＝40符、平和ツモ20符・平和ロン30符・七対子25符」のまま。<span class="vchk">✓ ランダムな手 約3,900手で例外なし（連風牌の雀頭を4符にするルールのときだけ例外あり）</span></li>
+  <li><b>ゴロで覚える</b>（同チャンネル）：子の30符は「<b>み・ご・と・に・さく・なのはな</b>」＝300・500・1000・2000・3900・7700。子の40符は「<b>よな・よな・とうさん・ふろ・ごーとー</b>」＝400・700・1300・2600・5200（4翻は満貫）。ロンの<b>n翻はn＋1番目</b>。ツモは<b>親の払いが1つ前・子の払いが2つ前</b>。「なのはな」は8700ではなく<b>7700</b>。<span class="vchk">✓ 全部の値を確認</span></li>
+  <li><b>七対子（25符）</b>は「<b>16・ヤマニ・64</b>」＝2翻1600・3翻3200・4翻6400（シロの麻雀研究室）。<span class="vchk">✓</span></li>
+  <li><b>ツモはロンの半分</b>（同）：子のロンの点数を半分にすると親の払い、それをさらに半分にすると子の払い（どちらも100点単位に切り上げ）。例：2000→1000→500で「500・1000」。<span class="vchk">✓ 20〜110符・1〜4翻のすべてで一致</span></li>
+  <li><b>90符＝40符＋50符、110符＝50符＋60符</b>（クリアレインのアトリエ）：例 90符1翻ロン＝1300＋1600＝2900。<span class="vchk">✓（70符＝30符＋40符などは合わないので、この2つだけ）</span></li>
+  <li><b>ナナサン・ヨンヨン</b>（シロの麻雀研究室）：満貫になるのは70符以上なら3翻、40〜60符なら4翻、30符以下なら5翻から。<span class="vchk">✓（切り上げ満貫ありなら、30符4翻・60符3翻も満貫）</span></li>
+  <li><b>当てずっぽうでも即答する</b>（平澤元気麻雀ch）：翻数は合っているのに符で詰まる人は、迷わず点数を言ってから答え合わせする練習が効く。渋川式のカードは<b>7秒以内</b>に答えられないと、苦手として多めに出ます。</li></ul></div>`,
+ wait:`<h2 style="font-size:17px">🎥 動画で紹介されている見抜き方</h2><div class="guide"><ul>
+  <li><b>3つのチェック</b>（平澤元気麻雀ch・daisenの三人麻雀専門チャンネル）：①順子を<b>下から抜く／上から抜く</b>　②3枚ある牌を<b>暗刻と見る／対子と見る</b>　③見つけた待ちの<b>スジの牌</b>（1-4-7・2-5-8・3-6-9）も待ちになっていないか疑う</li>
+  <li><b>清一色</b>は端の完成面子を1つ抜いて枚数を減らしてから考える（渋川式 麻雀通信）。ただし抜いた面子が待ちに関わることもあるので、最後にスジの牌を確かめる</li>
+  <li>牌を色・数字の順にきちんと並べると、多面張とフリテンの見落としが減る（発男道場）</li>
+  <li>例（アプリで計算済み）：<b>1234m→1・4m</b>　<b>3335m→4・5m</b>　<b>2345567p→2・5・8p</b>　<b>2223334p→2・3・4・5p</b>　<b>6888s→6・7s</b>（68は嵌張なので8ではなく7）</li></ul></div>`,
+ read:`<h2 style="font-size:17px">🎥 動画で紹介されている読み方（実戦の目安）</h2><div class="guide"><ul>
+  <li><b>安全度の目安</b>（7人孫爺の健康麻雀教室）：現物 ＞ スジかつ壁 ＞ 片スジ・ワンチャンス ＞ 無スジ ＞ 4・5・6の無スジ。どれも<b>両面待ちに対する目安</b>で、単騎・シャンポン・嵌張・辺張には当たることがある</li>
+  <li><b>筋カウント</b>（平澤元気麻雀ch）：両面待ちのスジは全部で<b>18本</b>（各色 14・25・36・47・58・69）。1・2・3・7・8・9が通ると1本、4・5・6が通ると2本消える。残りが少ないほど、まだ通っていない無スジは危ない</li>
+  <li><b>通りやすい無スジ</b>（発男道場）：宣言牌がドラの隣ならドラをまたぐ両面／5を先に切って4で立直なら3-6／役牌を先に切り、後からオタ風を手出ししていれば残りの役牌</li>
+  <li><b>宣言牌のそばが危ないとき</b>（クリアレインのアトリエ）：宣言牌がそれまでの捨て牌より価値が低い牌のとき（例：オタ風より後に3を切った）と、離れたターツを落としたとき</li></ul>
+  <p class="sub">ここは動画の考え方の紹介です。正解の判定は、これまでどおりアプリの計算（現物・スジ・壁など）で行います。</p></div>`,
+ kiru:`<h2 style="font-size:17px">🎥 動画で紹介されている考え方</h2><div class="guide"><ul>
+  <li><b>1向聴は3種類</b>（発男道場・平澤元気麻雀ch）：<b>くっつき</b>（面子3つ＋雀頭＋浮き牌）／<b>ヘッドレス</b>（面子3つ・雀頭なし）／<b>完全1向聴</b>（面子2つ＋雀頭＋ターツ2つ）。くっつきは受け入れが広いが愚形の聴牌も増え、ヘッドレスは単騎待ちになりやすい</li>
+  <li><b>浮き牌は3〜7 ＞ 2・8 ＞ 1・9</b>：くっつく牌が 1・9は3種11枚、2・8は4種15枚、3〜7は5種19枚（アプリで計算）</li>
+  <li><b>4連形・中ぶくれなどの4枚の形は、孤立牌より先に残す</b>。重要形の📖図鑑で受け入れを比べられます</li></ul>
+  <p class="sub">リャンカンと4連形のどちらを残すかなどは、役・ドラ・巡目で正解が変わると動画でも説明されています。このアプリは受け入れだけで判定します。</p></div>`
+};
+// 子の30符・40符・20符・25符の表で、ゴロのどこを読むかを示す（カードの正解と一致するときだけ表示）
+function sbGoro(p,d,h,ans){
+  if(d)return '';
+  const G30={v:[300,500,1000,2000,3900,7700],w:['み','ご','と','に','さく','なのはな'],n:'子の30符：み・ご・と・に・さく・なのはな'},
+        G40={v:[400,700,1300,2600,5200],w:['よな','よな','とうさん','ふろ','ごーとー'],n:'子の40符：よな・よな・とうさん・ふろ・ごーとー'},
+        G25={v:[1600,3200,6400],w:['16','ヤマニ','64'],n:'七対子：16・ヤマニ・64'};
+  const ts=SB_PAT[p].ts;let g,ron=-1,oya=-1,ko=-1,txt='',note='';
+  if(['tsumo','nakiron','pinR'].includes(p)){g=G30;if(ts){oya=h;ko=h-1;}else ron=h+1;}
+  else if(p==='menron'){g=G40;ron=h+1;}
+  else if(p==='pinT'){g=G40;oya=h-1;ko=h-2;note='平和ツモ（20符）は40符のゴロを<b>1翻ずらして</b>読みます。';}
+  else if(p==='chiR'){g=G25;ron=h-2;}
+  else if(p==='chiT'){g=G25;const r=g.v[h-2];if(r==null)return '';const o=Math.ceil(r/2/100)*100,k=Math.ceil(o/2/100)*100;txt=k+'・'+o;
+    if(txt!==ans)return '';return `<div><h3>ゴロで覚える</h3><p>${G25.n}。${h}翻のロン ${r} を半分にして親の払い ${o}、さらに半分で子の払い ${k}。</p></div>`;}
+  else return '';
+  if(ts){if(ko<0||oya>=g.v.length)return '';txt=g.v[ko]+'・'+g.v[oya];}else{if(ron<0||ron>=g.v.length)return '';txt=String(g.v[ron]);}
+  if(txt!==ans)return '';
+  const chip=(w,i)=>{const on=i===ron||i===oya||i===ko;const lab=i===ron?'ロン':i===oya?'親払い':i===ko?'子払い':'';
+    return `<span class="gch${on?' on':''}"><b>${w}</b><small>${g.v[i]}</small>${lab?`<em>${lab}</em>`:''}</span>`;};
+  return `<div><h3>ゴロで覚える</h3><p class="sub">${g.n}</p><div class="goro">${g.w.map(chip).join('')}</div>
+    <p class="sub">${ts?'ツモは<b>親の払いが1つ前・子の払いが2つ前</b>。':`ロンの${h}翻は<b>${h+1}番目</b>。`}${note}</p></div>`;
+}
+// 12符判別法：符を数える必要があるか（①刻子・槓子2組以上 ②槓 ③1・9・字牌の暗刻）
+function fuJudge(r){
+  if(r.chiitoi||r.pinfu)return null;
+  const ks=r.groups.filter(g=>g.k!=='shun');
+  const a=ks.length>=2,b=ks.some(g=>g.k==='kan'),c=ks.some(g=>g.k==='kou'&&(!g.open||g.ronKou)&&isYao(g.t));
+  return{a,b,c,any:a||b||c};
 }
 
 
@@ -3780,7 +3849,7 @@ function openGuide(){
       <li>まず向聴数を戻さない打牌を選び、その中で受け入れが一番広いものを選ぶ</li></ul></div>
       <p class="sub">役・打点・安全度は考えていないので、実戦では状況で正解が変わることもあります。</p>`
   };
-  openSheet((mode==='score'&&course==='shibu'?shibuGuide():g[mode]||g.score)+`<button class="primary" type="button" id="cls">閉じる</button>`,()=>$('#cls').onclick=closeSheet);
+  openSheet((mode==='score'&&course==='shibu'?shibuGuide():g[mode]||g.score)+(KOTSU[mode]||'')+`<button class="primary" type="button" id="cls">閉じる</button>`,()=>$('#cls').onclick=closeSheet);
 }
 const SETS=[
   ['kuitan','喰いタン','副露した手でも断幺九を認める',[['あり',true],['なし',false]]],
