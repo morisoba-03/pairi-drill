@@ -568,6 +568,12 @@ button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
 .qhead{flex-wrap:wrap;row-gap:2px}
 .lv button{padding:6px 10px}
 .kindrow .seg.c4{grid-template-columns:repeat(4,1fr)}
+.kindrow .seg.c3{grid-template-columns:repeat(3,1fr)}
+.seg button.mk-ok{outline:3px solid var(--ok,#1f9d55);outline-offset:-3px}.seg button.mk-ng{outline:3px solid var(--ng,#d64545);outline-offset:-3px}
+.felt .row.fall{margin-top:6px}.tile.dim{opacity:.4}
+.fvs{display:flex;align-items:center;gap:8px;margin:4px 0}.fvs .row{flex:1}.fvl{font-weight:800;width:1.4em;text-align:center}
+.fcard{border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin:8px 0}.fhead{display:flex;gap:8px;align-items:baseline}.fnum{margin-left:auto;font-weight:700}
+.frow{display:flex;align-items:center;gap:8px;margin:6px 0}.frow .row{flex:none;--tw:26px;justify-content:flex-start}.frow .uke{--tw:19px}.farr{font-weight:700}
 .bdrow{display:flex;flex-direction:column;gap:2px;padding:6px 0;border-bottom:1px dashed var(--line)}
 .bdw{margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-weight:700}
 .bdt{display:inline-flex;flex-direction:column;align-items:center}
@@ -1510,7 +1516,7 @@ const saveWeak=()=>LS.set('weak',weak);
 let pend=[],qCount={};
 let scoreKind=LS.get('scoreKind','agari');if(!['agari','tenpai'].includes(scoreKind))scoreKind='agari';
 let waitN=LS.get('waitN',13);if(![4,7,10,13].includes(waitN))waitN=13;
-let kiruKind=LS.get('kiruKind','cut');if(!['cut','uke'].includes(kiruKind))kiruKind='cut';
+let kiruKind=LS.get('kiruKind','cut');if(!['cut','uke','form'].includes(kiruKind))kiruKind='cut';
 function qKey(){
   if(mode==='score')return course==='shibu'?'shibu'+shibu.stage:'score'+scoreKind+levels.score;
   return mode+({read:readKind,kiru:kiruKind,wait:waitN}[mode]||'')+levels[mode];
@@ -1646,7 +1652,7 @@ function scoreTagsBy(ctx,r){
   return{h:[...new Set(h)],f:[...new Set(f)],p};
 }
 const scoreAllTags=(ctx,r)=>{const T=scoreTagsBy(ctx,r);return T.h.concat(T.f,T.p);};
-function cur(){const k=(mode==='score'&&course==='shibu')?'shibu'+shibu.stage:mode+(mode==='read'?(typeof readKind!=='undefined'?readKind:'hit'):mode==='score'&&scoreKind==='tenpai'?'tenpai':mode==='kiru'&&kiruKind==='uke'?'uke':mode==='wait'&&waitN!==13?'n'+waitN:'')+levels[mode];return stats[k]||(stats[k]={ok:0,n:0,st:0});}
+function cur(){const k=(mode==='score'&&course==='shibu')?'shibu'+shibu.stage:mode+(mode==='read'?(typeof readKind!=='undefined'?readKind:'hit'):mode==='score'&&scoreKind==='tenpai'?'tenpai':mode==='kiru'&&kiruKind!=='cut'?kiruKind:mode==='wait'&&waitN!==13?'n'+waitN:'')+levels[mode];return stats[k]||(stats[k]={ok:0,n:0,st:0});}
 function stHTML(){const s=cur();return `<span class="st" id="st">${revBadge()}<b>${s.ok}</b>/${s.n}問 · 連続<b>${s.st}</b></span>`;}
 function record(ok){trainHook(ok);histAdd(ok);const s=cur();s.n++;if(ok){s.ok++;s.st++;}else s.st=0;LS.set('stats2',stats);const e=$('#st');if(e)e.outerHTML=stHTML();}
 
@@ -3243,6 +3249,7 @@ function kiruTags(q){const b=q.res[0];const t=['k:'+SHAN(b.s)];if(q.res.filter(x
 function variantKiru(hand){for(const f of xformMaker()){const h=xCounts(hand,f);if(!isAgari(h))return{hand:h,res:analyzeDiscards(h)};}return null;}
 function newKiru(){
   if(kiruKind==='uke')return newUke();
+  if(kiruKind==='form')return newForm();
   const lv=levels.kiru;const q=getQ('kiru')||biasedGen(()=>genNanikiru(lv),kiruTags);
   Q={type:'kiru',...q,selI:null,done:false};drawKiru();
 }
@@ -3271,7 +3278,7 @@ function newUke(){
   const lv=levels.kiru;const q=getQ('uke')||biasedGen(()=>genUkeQ(lv),q=>['u:'+SHAN(q.s)]);
   Q={type:'uke',...q,sel:new Set(),done:false};drawUke();
 }
-function kindSegKiru(){return `<div class="kindrow"><div class="seg" role="group" aria-label="問題の種類"><button type="button" data-kk="cut" aria-pressed="${kiruKind==='cut'}">何を切る？</button><button type="button" data-kk="uke" aria-pressed="${kiruKind==='uke'}">有効牌はどれ？</button></div></div>`;}
+function kindSegKiru(){return `<div class="kindrow"><div class="seg c3" role="group" aria-label="問題の種類"><button type="button" data-kk="cut" aria-pressed="${kiruKind==='cut'}">何を切る？</button><button type="button" data-kk="uke" aria-pressed="${kiruKind==='uke'}">有効牌</button><button type="button" data-kk="form" aria-pressed="${kiruKind==='form'}">重要形</button></div></div>`;}
 function bindKindKiru(){root.querySelectorAll('[data-kk]').forEach(b=>b.onclick=()=>{if(kiruKind===b.dataset.kk)return;kiruKind=b.dataset.kk;LS.set('kiruKind',kiruKind);next();});}
 function drawUke(){
   const d=Q.done,us=new Set(Q.uke),arr=toArr(Q.hand13);
@@ -3358,6 +3365,151 @@ function kiruBody(){
     <p class="sub">牌の効率だけで判定しています。役・打点・安全度は考えていません。</p>`;
 }
 
+// ===== 何切る：重要形 =====
+// 形の数字は相対値（図鑑では3から始まる位置）。受け入れはすべてエンジンで計算する（文章に枚数は書かない）。
+// ctx two：4枚で2ブロック分（他は完成面子2つ＋雀頭＋字牌の浮き牌1枚＝1向聴）
+// ctx one：3枚で1ブロック分（他は完成面子2つ＋雀頭＋別の色の両面＝1向聴）
+const FORMS=[
+ {id:'4ren',n:'4連形',r:'よんれんけい',s:[3,4,5,6],c:'two',p:'両面ターツが2つ重なった形。両外側・内側のどれを引いても「面子＋ターツ」になる。2ブロック形の中で最も受けが広い代表格。聴牌すると両端2種のノベタン待ち。'},
+ {id:'arya',n:'亜両面',r:'ありゃんめん',s:[3,3,4,5],c:'two',p:'面子の端と同じ数字が1枚くっついた形。「面子＋浮き牌」「対子＋両面」の2通りに見られる。聴牌すると両面待ちになるが、待ちの片方を自分で2枚使っているので残り枚数が少ない。'},
+ {id:'nakab',n:'中ぶくれ',r:'なかぶくれ',s:[3,4,4,5],c:'two',p:'面子の真ん中が対子になった形。「面子＋雀頭候補」にも「両面×2」にも見られる。雀頭候補を兼ねるので、雀頭が無い手で特に役に立つ。'},
+ {id:'ankkan',n:'暗刻＋1間',r:'あんこ＋いっけん',s:[3,3,3,5],c:'two',p:'暗刻から1つ飛ばした所に1枚。暗刻から1枚借りると嵌張になり、暗刻を対子と見れば雀頭候補にもなる。'},
+ {id:'ankrin',n:'暗刻＋隣',r:'あんこ＋となり',s:[3,3,3,4],c:'two',p:'暗刻のすぐ隣に1枚。暗刻から1枚借りると両面ターツになる。'},
+ {id:'mentobi',n:'面子＋1間',r:'めんつ＋いっけん',s:[3,4,5,7],c:'two',p:'面子から1つ飛ばした所に1枚。「面子＋浮き牌」とも「両面＋嵌張」とも見られる。'},
+ {id:'ryanryan',n:'両面＋両面（重なり）',r:'りゃんめん×2',s:[3,4,6,7],c:'two',p:'2つの両面ターツが同じ牌を待つ形。重なった牌はどちらのターツの受けにもなるので、ターツ2つ分ほど種類は増えない。'},
+ {id:'ryankan',n:'リャンカン',r:'りゃんかん',s:[3,5,7],c:'one',p:'嵌張が2つ重なった形。受けは両面ターツと同じ2種。ただし聴牌するときは、どちらかの嵌張（1種）待ちになる。'},
+ {id:'ryantoi',n:'両面対子',r:'りゃんめん＋といつ',s:[3,4,4],c:'one',p:'両面ターツに対子がくっついた形。ターツと雀頭候補を兼ねる。雀頭が別にあるときは、対子が刻子になる受けも加わる。'},
+ {id:'kantoi',n:'嵌張対子',r:'かんちゃん＋といつ',s:[3,5,5],c:'one',p:'嵌張ターツに対子がくっついた形。ターツと雀頭候補を兼ねる。'},
+];
+const FCTX={two:'他は完成した面子2つ＋雀頭＋浮き牌1枚（1向聴）。この形が<b>2ブロック分</b>を担当',
+            one:'他は完成した面子2つ＋雀頭＋別の色の両面（1向聴）。この形が<b>1ブロック分</b>を担当'};
+function formFill(ctx,suit){
+  const o=shuffle([0,1,2].filter(x=>x!==suit)),h=shuffle(range(27,34)),c=zeros();
+  const sh=(s,st)=>{for(let i=0;i<3;i++)c[s*9+st+i]++;};
+  if(ctx==='two'){sh(o[0],ri(7));sh(o[1],ri(7));c[h[0]]+=2;c[h[1]]++;}
+  else{sh(o[0],ri(3));c[o[0]*9+6]++;c[o[0]*9+7]++;sh(o[1],ri(7));c[h[0]]+=2;}
+  return c;
+}
+// vals：形の数字（1〜9）。手全体で向聴数が下がる牌のうち、形と同じ色のものだけを数える
+function formCalc(vals,suit,fill){
+  const c=fill.slice(),tl=vals.map(v=>suit*9+v-1).sort((a,b)=>a-b);tl.forEach(t=>c[t]++);
+  const s=shanten(c.slice()),uke=[];let cnt=0;
+  for(let u=suit*9;u<suit*9+9;u++){const rest=4-c[u];if(rest<=0)continue;c[u]++;if(shanten(c.slice())<s){uke.push(u);cnt+=rest;}c[u]--;}
+  return{tiles:tl,hand13:c,uke,cnt,s};
+}
+const fVals=(f,mir,d)=>f.s.map(x=>(mir?10-x:x)+d);
+function fShifts(vs){const lo=Math.min(...vs),hi=Math.max(...vs);return range(1-lo,10-hi);}
+let fBase=null;
+function formBase(){ // 図鑑用：筒子・3から始まる位置で計算（他の部分は固定）
+  if(fBase)return fBase;
+  const fill={two:zeros(),one:zeros()};
+  [0,1,2].forEach(i=>fill.two[i]++);[19,20,21].forEach(i=>fill.two[i]++);fill.two[27]+=2;fill.two[31]++;
+  [0,1,2].forEach(i=>fill.one[i]++);fill.one[6]++;fill.one[7]++;[19,20,21].forEach(i=>fill.one[i]++);fill.one[27]+=2;
+  fBase={};FORMS.forEach(f=>{fBase[f.id]=formCalc(f.s,1,fill[f.c]);});
+  return fBase;
+}
+function fRank(f){const B=formBase();return FORMS.filter(x=>x.c===f.c).sort((a,b)=>B[b.id].cnt-B[a.id].cnt||B[b.id].uke.length-B[a.id].uke.length);}
+function pickForm(pool){
+  const g=(weak.kiruform)||{};
+  const w=pool.map(f=>1+2*(g['fm:'+f.n]||0));let r=Math.random()*w.reduce((a,b)=>a+b,0);
+  for(let i=0;i<pool.length;i++){r-=w[i];if(r<0)return pool[i];}return pool[0];
+}
+function newForm(){
+  const lv=levels.kiru,k=lv>=2&&Math.random()<0.45?'fv':'fu',suit=ri(3),mir=Math.random()<0.5;
+  if(k==='fu'){
+    const f=pickForm(FORMS),vs0=fVals(f,mir,0),d=pick(fShifts(vs0));
+    Q={type:'form',k,f,hide:lv>=3,...formCalc(vs0.map(v=>v+d),suit,formFill(f.c,suit)),sel:new Set(),done:false};
+  }else{
+    const A=pickForm(FORMS),cand=FORMS.filter(x=>x.c===A.c&&x.id!==A.id),B=pick(cand);
+    const va=fVals(A,mir,0),vb=fVals(B,mir,0),sa=fShifts(va),ds=sa.filter(x=>fShifts(vb).includes(x));
+    const d=ds.length?pick(ds):0,fill=formFill(A.c,suit);
+    let a={f:A,...formCalc(va.map(v=>v+d),suit,fill)},b={f:B,...formCalc(vb.map(v=>v+d),suit,fill)};
+    if(Math.random()<0.5)[a,b]=[b,a];
+    Q={type:'form',k,A:a,B:b,hide:lv>=3,ans:a.cnt>b.cnt?'A':a.cnt<b.cnt?'B':'eq',sel:null,done:false};
+  }
+  drawForm();
+}
+const fTags=()=>Q.k==='fu'?['fm:'+Q.f.n]:['fm:'+Q.A.f.n,'fm:'+Q.B.f.n,'fm:広さの比較'];
+function openFormGuide(){
+  const B=formBase();
+  // 図鑑は広い順に並べる
+  const order=c=>fRank(FORMS.find(f=>f.c===c));
+  const blk=c=>order(c).map(f=>{const x=B[f.id];
+    return `<div class="fcard"><div class="fhead"><b>${f.n}</b><span class="sub">${f.r}</span><span class="fnum">${x.uke.length}種${x.cnt}枚</span></div>
+      <div class="frow"><div class="row" style="--n:${x.tiles.length+.4}">${tiles(x.tiles)}</div><span class="farr">→</span><div class="uke">${tiles(x.uke)}</div></div><p class="sub">${f.p}</p></div>`;}).join('');
+  openSheet(`<h2>何切るの重要形 図鑑</h2>
+    <p class="sub">右側が<b>引くと前に進む牌（有効牌）</b>。枚数は手の中に見えている分を引いた残りで、すべてアプリが計算しています。並びは受け入れが広い順。数字が1・9に近い位置だと、受けが減ることがあります。</p>
+    <h3>4枚で2ブロック分の形</h3><p class="sub">${FCTX.two.replace(/<\/?b>/g,'')}とした場合</p>${blk('two')}
+    <h3>3枚で1ブロック分の形</h3><p class="sub">${FCTX.one.replace(/<\/?b>/g,'')}とした場合</p>${blk('one')}
+    <p class="sub">牌の効率（受け入れ）だけの比較です。聴牌したときの待ちの良さ・役・打点は別に考えます。</p>
+    <button class="primary" type="button" id="cls">閉じる</button>`,()=>$('#cls').onclick=closeSheet);
+}
+function fName(f){return Q.hide&&!Q.done?'この形':`【${f.n}】`;}
+function drawForm(){
+  const d=Q.done;
+  if(Q.k==='fu'){
+    const us=new Set(Q.uke),suit=Math.floor(Q.tiles[0]/9);
+    render(`
+    ${kindSegKiru()}
+    <div class="qhead"><p class="prompt">${fName(Q.f)}の有効牌は？</p>${stHTML()}</div>
+    <div class="felt"><div class="row" style="--n:7">${tiles(Q.tiles)}</div>
+      <div class="row fall" style="--n:13.6">${toArr(Q.hand13).map(t=>tileHTML(t,{cls:Q.tiles.includes(t)?'':'dim'})).join('')}</div></div>
+<!--CTRL-->
+    <p class="hint">${FCTX[Q.f.c]}。<b>同じ色</b>で前に進む牌をすべて選ぶ <button type="button" class="backstep" id="fz">📖図鑑</button></p>
+    <div class="cand"><div class="crow">${range(suit*9,suit*9+9).map(t=>{
+      let m='';if(d){if(us.has(t)&&Q.sel.has(t))m='mk-ok';else if(us.has(t))m='mk-miss';else if(Q.sel.has(t))m='mk-ng';}else if(Q.sel.has(t))m='on';
+      const dead=Q.hand13[t]>=4;
+      return `<button class="pick ${m} ${dead?'off':''}" type="button" data-t="${t}" aria-pressed="${Q.sel.has(t)}" aria-label="${tLabel(t)}" ${d||dead?'disabled':''}>${tileHTML(t)}</button>`;}).join('')}</div></div>`);
+    bindKindKiru();$('#fz').onclick=openFormGuide;
+    if(!d){
+      root.querySelectorAll('.cand .pick:not(.off)').forEach(b=>b.onclick=()=>{const t=+b.dataset.t;Q.sel.has(t)?Q.sel.delete(t):Q.sel.add(t);drawForm();});
+      setGo(Q.sel.size?`答え合わせ（${Q.sel.size}種）`:'有効牌をタップ',Q.sel.size>0,()=>{
+        Q.done=true;Q.ok=Q.sel.size===us.size&&[...Q.sel].every(t=>us.has(t));record(Q.ok);
+        if(Q.ok)weakDecay(fTags());else weakAdd(fTags());
+        drawForm();
+        openEx(Q.ok,`【${Q.f.n}】有効牌 <b>${Q.uke.length}種 ${Q.cnt}枚</b> <span class="sumtiles">${tiles(Q.uke)}</span>`,formBodyFu(),`<div class="row" style="--n:7">${tiles(Q.tiles)}</div>`);
+      });
+    }else setGo('次の問題',true,next);
+    return;
+  }
+  const lab={A:'A',B:'B',eq:'同じ'};
+  const rowF=(x,key)=>`<div class="fvs"><span class="fvl">${key}</span><div class="row" style="--n:7">${tiles(x.tiles)}</div><span class="sub">${Q.hide&&!d?'':x.f.n}${d?`　<b>${x.cnt}枚</b>`:''}</span></div>`;
+  render(`
+    ${kindSegKiru()}
+    <div class="qhead"><p class="prompt">受け入れが広いのはどっち？</p>${stHTML()}</div>
+    <div class="felt">${rowF(Q.A,'A')}${rowF(Q.B,'B')}</div>
+<!--CTRL-->
+    <p class="hint">${FCTX[Q.A.f.c]}。他の部分が同じとき、<b>同じ色の有効牌の残り枚数</b>が多いのは？ <button type="button" class="backstep" id="fz">📖図鑑</button></p>
+    <div class="kindrow"><div class="seg c3" role="group" aria-label="答え">${['A','eq','B'].map(v=>{
+      let m='';if(d){if(v===Q.ans)m='mk-ok';else if(v===Q.sel)m='mk-ng';}
+      return `<button type="button" data-fv="${v}" class="${m}" aria-pressed="${Q.sel===v}" ${d?'disabled':''}>${lab[v]}</button>`;}).join('')}</div></div>`);
+  bindKindKiru();$('#fz').onclick=openFormGuide;
+  if(!d){
+    root.querySelectorAll('[data-fv]').forEach(b=>b.onclick=()=>{Q.sel=b.dataset.fv;drawForm();});
+    setGo(Q.sel?`${lab[Q.sel]} で答え合わせ`:'A・同じ・Bから選ぶ',!!Q.sel,()=>{
+      Q.done=true;Q.ok=Q.sel===Q.ans;record(Q.ok);if(Q.ok)weakDecay(fTags());else weakAdd(fTags());
+      drawForm();
+      openEx(Q.ok,`正解は <b>${lab[Q.ans]}</b>（A ${Q.A.f.n} ${Q.A.cnt}枚／B ${Q.B.f.n} ${Q.B.cnt}枚）`,formBodyFv(),`${rowF(Q.A,'A')}${rowF(Q.B,'B')}`);
+    });
+  }else setGo('次の問題',true,next);
+}
+function formAfter(x,u){return tiles(x.tiles.concat([u]).sort((a,b)=>a-b));}
+function formRankHTML(f,mark){const B=formBase();return `<div><h3>同じ仲間の広さランキング（図鑑の位置）</h3><div class="scroll"><table><tr><th>形</th><th class="num">有効牌</th></tr>${fRank(f).map(y=>`<tr class="${mark.includes(y.id)?'best':''}"><td>${y.n}</td><td class="num">${B[y.id].uke.length}種${B[y.id].cnt}枚</td></tr>`).join('')}</table></div></div>`;}
+function formBodyFu(){
+  const us=new Set(Q.uke),miss=Q.uke.filter(t=>!Q.sel.has(t)),wrong=[...Q.sel].filter(t=>!us.has(t));
+  const rows=Q.uke.map(u=>`<tr class="${Q.sel.has(u)?'':'mine'}"><td style="--tw:22px">${tileHTML(u)}</td><td class="num">${4-Q.hand13[u]}枚</td><td><div class="uke">${formAfter(Q,u)}</div></td><td>${Q.sel.has(u)?'○':'見逃し'}</td></tr>`).join('');
+  return `<p><b>${Q.f.n}</b>（${Q.f.r}）：${Q.f.p}</p>
+    ${wrong.length?`<p class="sub">${wrong.map(tLabel).join('・')} は引いても1向聴のまま（ブロックが増えない）。</p>`:''}
+    ${miss.length?`<p class="sub">見逃し：${miss.map(tLabel).join('・')}。形の<b>外側</b>・<b>内側</b>・<b>同じ数字（くっつき）</b>の順に確かめると漏れにくくなります。</p>`:''}
+    <div><h3>引いた後の形（合計 ${Q.cnt}枚）</h3><div class="scroll"><table><tr><th>牌</th><th class="num">残り</th><th>引いた後</th><th></th></tr>${rows}</table></div></div>
+    ${formRankHTML(Q.f,[Q.f.id])}`;
+}
+function formBodyFv(){
+  const one=(x,k)=>`<div><h3>${k}：${x.f.n}（${x.uke.length}種${x.cnt}枚）</h3><div class="frow"><div class="row" style="--n:${x.tiles.length+.4}">${tiles(x.tiles)}</div><span class="farr">→</span><div class="uke">${tiles(x.uke)}</div></div><p class="sub">${x.f.p}</p></div>`;
+  return `${one(Q.A,'A')}${one(Q.B,'B')}${formRankHTML(Q.A.f,[Q.A.f.id,Q.B.f.id])}
+    <p class="sub">残り枚数は、手の中に見えている分（形の牌も含む）を引いた数です。</p>`;
+}
+
 
 // ===== AIに詳しく聞く（Claudeのアーティファクトとして開いたときだけ） =====
 // アプリが計算した正解と内訳をそのまま渡し、AIには「なぜ違ったか・どう覚えるか」だけを説明させる（答えは再計算させない）
@@ -3393,6 +3545,8 @@ function aiContext(){
   if(q.type==='wait')return `【問題】待ち牌をすべて選ぶ（${sum(q.hand)}枚の手牌）\n手牌：${handStr(q.hand)}\n【アプリが計算した正解】待ち：${q.waits.map(w=>tLabel(w)+'（'+waitShapes(q.hand,w).shapes.map(x=>WAITNAME[x]).join('・')+'）').join('、')}\n分け方の例：${waitBreakdown(q.hand).slice(0,6).map(x=>x.groups.map(g=>groupTiles(g).map(tLabel).join('')).join(' ')+' ／残り '+x.rest.map(tLabel).join('')+' → '+x.ws.map(w=>tLabel(w.t)+WAITNAME[w.s]).join('・')).join('\n')}\n【ユーザーの答え】${[...q.sel].map(tLabel).join('、')}`;
   if(q.type==='read'){const ri=q.river.findIndex(x=>x.riichi);return `【問題】対面の立直に対して、${q.kind==='safe'?'一番安全な牌':'当たり牌'}を自分の手牌から選ぶ\n対面の河（順番）：${q.river.map((x,i)=>tLabel(x.t)+(i===ri?'(立直宣言)':'')).join(' ')}\nドラ表示牌：${tLabel(q.dora)}\n自分の手牌：${handStr(q.own)}\n選べる候補：${q.cands.map(t=>tLabel(t)+'（'+(q.infos[t]?q.infos[t].label:'')+'）').join('、')}\n【アプリの正解】${tLabel(q.win)}（相手の実際の待ち：${q.waits.map(tLabel).join('・')}）\n候補ごとの判断材料：${q.cands.map(t=>q.infos[t]?tLabel(t)+'：'+(q.infos[t].reasons||[]).join('／'):'').filter(Boolean).join('\n')}\n【ユーザーの答え】${tl(q.sel)}`;}
   if(q.type==='kiru'){const b=q.res[0];return `【問題】何を切る？（牌効率のみで判定。役・打点・安全度は考えない）\n手牌（14枚）：${handStr(q.hand)}\n【アプリが計算した正解】${q.res.filter(x=>x.s===b.s&&x.cnt===b.cnt).map(x=>tLabel(x.t)).join('・')}切り（${SHAN(b.s)}・受け入れ${b.cnt}枚）\n打牌ごと：${q.res.slice(0,8).map(x=>`${tLabel(x.t)}切り→${SHAN(x.s)} 受け入れ${x.cnt}枚（${x.uke.map(tLabel).join('')}）`).join('\n')}`+(q.tie?`\n受け入れ同数の比較（聴牌時の待ちの平均枚数）：${q.tie.w.map(x=>tLabel(x.t)+' '+x.w.toFixed(1)).join('、')}`:'')+`\n【ユーザーの答え】${tl(q.sel)}切り`;}
+  if(q.type==='form'){const H=x=>x.tiles.map(tLabel).join('');if(q.k==='fu')return `【問題】重要形「${q.f.n}」の有効牌（同じ色で、引くと向聴数が下がる牌）をすべて選ぶ\n形：${H(q)}\n前提：${FCTX[q.f.c].replace(/<\/?b>/g,'')}\n手牌（13枚）：${handStr(q.hand13)}\n形の要点：${q.f.p}\n【アプリが計算した正解】${q.uke.map(t=>tLabel(t)+'（残り'+(4-q.hand13[t])+'枚）').join('、')} 合計${q.cnt}枚\n【ユーザーの答え】${[...q.sel].map(tLabel).join('、')}`;
+    return `【問題】重要形の比較：他の部分が同じとき、受け入れ（同じ色の有効牌の残り枚数）が広いのはどっち？\n前提：${FCTX[q.A.f.c].replace(/<\/?b>/g,'')}\nA：${q.A.f.n} ${H(q.A)}\nB：${q.B.f.n} ${H(q.B)}\n【アプリが計算した正解】${q.ans==='eq'?'同じ':q.ans}（A ${q.A.uke.map(tLabel).join('')} ${q.A.cnt}枚／B ${q.B.uke.map(tLabel).join('')} ${q.B.cnt}枚）\n【ユーザーの答え】${q.sel==='eq'?'同じ':q.sel}`;}
   if(q.type==='uke')return `【問題】${tLabel(q.cut)}を切った後の手（${SHAN(q.s)}）で、引くと前に進む牌（有効牌）をすべて選ぶ\n手牌（13枚）：${handStr(q.hand13)}\n【アプリが計算した正解】${q.uke.map(t=>tLabel(t)+'（残り'+(4-q.c14[t])+'枚）').join('、')} 合計${q.cnt}枚\n【ユーザーの答え】${[...q.sel].map(tLabel).join('、')}`;
   return '';
 }
@@ -3439,7 +3593,7 @@ let hist=LS.get('hist',[]);if(!Array.isArray(hist))hist=[];
 let aiChat=Object.assign({view:[],msgs:[]},LS.get('aiChat',{}));
 let aiDrill=LS.get('aiDrill',null);
 const saveAiChat=()=>{aiChat.view=aiChat.view.slice(-40);aiChat.msgs=aiChat.msgs.slice(-24);LS.set('aiChat',aiChat);};
-const GNAME={score:'点数計算',tenpai:'聴牌形',shibu:'渋川式',wait:'自分の待ち',read:'相手の待ち',kirucut:'何切る',kiruuke:'有効牌'};
+const GNAME={score:'点数計算',tenpai:'聴牌形',shibu:'渋川式',wait:'自分の待ち',read:'相手の待ち',kirucut:'何切る',kiruuke:'有効牌',kiruform:'重要形'};
 function histAdd(ok){
   if(mode==='ai')return;
   if(aiDrill){aiDrill.done++;if(ok)aiDrill.ok++;}
@@ -3463,7 +3617,7 @@ const TAG_CATALOG=`役(y:)：立直・門前清自摸和・平和・断幺九・
 点数(p:)：子のロン・子のツモ・親のロン・親のツモ・満貫以上・30符・40符・50符・60符
 アガリ方(a:)：ツモ・門前ロン・鳴いてロン・平和ツモ・平和ロン・七対子ロン・七対子ツモ（渋川式の総合のみ）
 待ち(w:)：両面・嵌張・辺張・単騎・シャンポン・清一色・3種以上・七対子
-何切る(k:)：聴牌・1向聴・2向聴・同じ枚数の比較／有効牌(u:)：聴牌・1向聴・2向聴
+何切る(k:)：聴牌・1向聴・2向聴・同じ枚数の比較／有効牌(u:)：聴牌・1向聴・2向聴／重要形(fm:)：4連形・亜両面・中ぶくれ・暗刻＋1間・暗刻＋隣・面子＋1間・両面＋両面（重なり）・リャンカン・両面対子・嵌張対子・広さの比較
 タグは「y:混一色」「f:幺九牌の刻子」「w:嵌張」のように接頭辞つきで書く`;
 function aiProfile(){
   const S=statSum(),wt=weakTop(15),nt=Object.entries(notes).filter(([g,a])=>a.length).map(([g,a])=>`${GNAME[g]||g} ${a.length}問`).join('、')||'なし';
@@ -3511,7 +3665,7 @@ function startAIDrill(a){
   }else levels[a.mode]=lv;
   if(a.mode==='wait'&&[4,7,10,13].includes(+a.tiles)){waitN=+a.tiles;LS.set('waitN',waitN);}
   if(a.mode==='read'&&['hit','safe'].includes(a.kind)){readKind=a.kind;LS.set('readKind',readKind);}
-  if(a.mode==='kiru'&&['cut','uke'].includes(a.kind)){kiruKind=a.kind;LS.set('kiruKind',kiruKind);}
+  if(a.mode==='kiru'&&['cut','uke','form'].includes(a.kind)){kiruKind=a.kind;LS.set('kiruKind',kiruKind);}
   LS.set('levels',levels);
   aiDrill={label:String(a.label||'AI練習').slice(0,20),focus:(Array.isArray(a.focus)?a.focus:[]).map(String).filter(t=>/^[yfpawkur]:/.test(t)).slice(0,6),count:Math.max(3,Math.min(15,+a.count||5)),done:0,ok:0};
   LS.set('aiDrill',aiDrill);
@@ -3639,11 +3793,11 @@ const LVINFO={
   score:['門前の手だけ。符は表示され、翻数と点数を答える','副露あり。翻・符・点数をすべて答える','槓・混一色・清一色など高打点や複雑な符が中心'],
   wait:['待ちが1〜2種類のふつうの手','待ちが2〜3種類。清一色も混ざる','清一色の多面張（3種類以上）'],
   read:['当たり：スジ・字牌の中に無スジの当たりが1枚／安全牌：無スジの中にスジ・字牌が1枚','壁・ワンチャンス・片スジ・中スジまで使う','当たり：またぎスジ・裏スジで絞り込む／安全牌：安全度の近い候補を比べる'],
-  kiru:['切れば聴牌。正解がはっきりした問題','1向聴まで。正解は1〜2種類','1〜2向聴で、受け入れ差が小さい問題']
+  kiru:['切れば聴牌。正解がはっきりした問題（重要形：形の名前つきで有効牌を答える）','1向聴まで。正解は1〜2種類（重要形：「どっちが広い？」の比較も出る）','1〜2向聴で、受け入れ差が小さい問題（重要形：形の名前を伏せて出題）']
 };
 function weakListHTML(){
   const g=weak[wGroup()]||{},ks=Object.keys(g).sort((a,b)=>g[b]-g[a]).slice(0,12);
-  const nm={score:'点数計算',tenpai:'聴牌形',shibu:'渋川式',wait:'自分の待ち',read:'相手の待ち',kirucut:'何切る',kiruuke:'有効牌'}[wGroup()];
+  const nm={score:'点数計算',tenpai:'聴牌形',shibu:'渋川式',wait:'自分の待ち',read:'相手の待ち',kirucut:'何切る',kiruuke:'有効牌',kiruform:'重要形'}[wGroup()];
   return `<div class="lvinfo"><h3 class="sub" style="font-weight:700">苦手リスト（${nm}）</h3>${ks.length?ks.map(k=>`<div class="wk"><span>${tagLabel(k)}</span><i style="width:${Math.min(100,g[k]*14)}%"></i></div>`).join('')+`<p class="sub">間違えた項目ほど上に出ます。正解すると少しずつ減り、苦手を含む問題が多めに出ます。</p><button class="primary ghost" type="button" id="wrst">苦手リストを消す</button>`:'<p class="sub">まだありません。間違えた項目がここにたまり、その項目を含む問題が多めに出ます。</p>'}</div>`;
 }
 let resetArm=false;
